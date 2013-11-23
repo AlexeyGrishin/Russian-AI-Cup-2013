@@ -1,0 +1,195 @@
+<html>
+<head>
+	<script src='jquery.js'></script>
+	<script src='strategy.js'></script>
+	<script src="jquery.rightClick.js"></script>
+	<style>
+	.selectors {
+		float: right;
+	}
+	
+	.selectors label {
+		display: block;
+	}
+	
+	input {width: 30px};
+	</style>
+	<script>
+	var colors = {my: '#000088', enemy: '#880000'};
+	var letters = {soldier: "s", commander: "c", medic: "m"};
+	
+	var size = 20, width=30, height=20;
+	var Canvas = {
+		ctx: null,
+		drawField: function(field) {
+			this.ctx.clearRect(0, 0, size*width, size*height);
+			this.ctx.font = "10px verdana ";
+			for (var y = 0; y < field.length; y++) {
+				for (var x = 0; x < field[y].length; x++) {
+					var v = field[y][x];
+					var letter = '';
+					this.ctx.strokeStyle = '#ccc';
+					this.ctx.fillStyle = 'white';
+					if (v.side) {
+						this.ctx.fillStyle = colors[v.side];
+						letter = letters[v.type];
+					}
+					if (v.hover) {
+						this.ctx.strokeStyle = 'yellow';						
+					}
+					if (v.highlighted) {
+						this.ctx.strokeStyle = 'purple';
+					}
+					this.ctx.fillRect(size*x, size*y, size, size);
+					this.ctx.strokeRect(size*x, size*y, size-1, size-1);
+					this.ctx.strokeStyle = "white";
+					this.ctx.strokeText(letter, size*x+4, size*y+size-4);
+				}
+			}
+		},
+		
+		getCoords: function(e) {
+			return {
+				x: Math.floor((e.clientX - $("canvas").offset().left) / size),
+				y: Math.floor((e.clientY - $("canvas").offset().top) / size)
+			}
+		}
+	}
+	
+	var field = [];
+	for (var i = 0; i < 20; i++) {
+		var row = []
+		for (var j = 0; j < 30; j++) {
+			row.push({});
+		};
+		field.push(row);
+	};
+	
+	function iterate(cell, side) {
+		var idx = troops.indexOf(cell.type) + 1;
+		if (idx == troops.length) {
+			cell.type = undefined;
+			cell.side = undefined;
+			return;
+		}
+		cell.type = troops[idx];
+		cell.side = side;
+	}
+
+	function doAnalyze(myX, myY) {
+		var troops = fieldToTroops(field, myX, myY);
+		console.log(troops);
+		var logger = createLogger($("#log"));
+		analyze(troops.self, troops, logger);
+	}
+	
+	$(function() {
+		var c = $("canvas");
+		Canvas.ctx = c[0].getContext("2d");
+		var lastHover = {x:0, y:0};
+		var highlighted = 'nothing';
+		function redraw() {
+			highlighers[highlighted](field);
+			Canvas.drawField(field);
+		}
+		
+		c.mousemove(function(e) {
+			field[lastHover.y][lastHover.x].hover = false;
+			lastHover = Canvas.getCoords(e);
+			field[lastHover.y][lastHover.x].hover = true;
+			redraw();
+		});
+		c.click(function(e) {
+			var c = Canvas.getCoords(e);
+			if (e.shiftKey && field[c.y][c.x].side == 'my') return doAnalyze(c.x, c.y);
+			iterate(field[c.y][c.x], 'my');
+			redraw();
+		});
+		c.rightClick(function(e) {
+			var c = Canvas.getCoords(e);
+			iterate(field[c.y][c.x], 'enemy');
+			redraw();
+		});
+		$("label[data-show] input").click(function(e) {
+			highlighted = $("label[data-show] input:checked").parent().attr('data-show');
+			redraw();
+		});
+		redraw();
+	});
+	
+
+	
+	function highlightRadius(field, x0, y0, radius, filter) {
+		if (!filter) filter = function() {return true};
+		for (var x = x0 - radius; x <= x0 + radius; x++) {
+			for (var y = y0 - radius; y <= y0 + radius; y++) {
+				if (x < 0 || y < 0 || y >= field.length || x >= field[0].length) continue;
+				var dx = x - x0, dy = y - y0;
+				if (Math.sqrt(dx*dx + dy*dy) <= radius && filter(field[y][x])) field[y][x].highlighted = true;
+			}
+		}
+	}
+	
+	var highlighers = {
+		nothing: function(field) {
+			this.forEach(field, function(cell) {
+				cell.highlighted = false;
+			});
+		},
+		forEach: function(field, cb) {
+			for (var y = 0; y < field.length; y++) {
+				for (var x = 0; x < field[y].length; x++) {
+					cb(field[y][x], x, y);
+				}
+			}
+		},
+		radius: function(field, side, prop) {
+			this.nothing(field);
+			this.forEach(field, function(cell, x, y) {
+				if (cell.side == side) highlightRadius(field, x, y, troopSettings[cell.type][prop]);
+			}.bind(this));
+		},
+		"our-visibility": function(field) {
+			this.radius(field, "my", "visible");
+		},
+		"enemy-visibility": function(field) {
+			this.radius(field, "enemy", "visible");
+		},
+		"our-attackable": function(field) {
+			this.radius(field, "my", "attack");
+		},
+		"enemy-attackable": function(field) {
+			this.radius(field, "enemy", "attack");
+		},
+		"commander-bonus": function(field) {
+			this.nothing(field);
+			this.forEach(field, function(cell, x, y) {
+				if (cell.type == 'commander') highlightRadius(field, x, y, 5, function(cell1) {return cell1.side == cell.side && cell1.type != 'commander'});
+			}.bind(this));
+		}
+	}
+	
+	</script>
+</head>
+<body>
+	<canvas width="600" height="400"></canvas>
+	<div class='selectors'>
+		<!--label data-type="soldier" data-me="true"><span>My Soldier </span><input/></label>
+		<label data-type="commander" data-me="true"><span>My Commander </span><input/></label>
+		<label data-type="medic" data-me="true"><span>My Medic </span><input/></label>
+		<label data-type="soldier" data-me="false"><span>Enemy Soldier </span><input/></label>
+		<label data-type="commander" data-me="false"><span>Enemy Commander </span><input/></label>
+		<label data-type="medic" data-me="false"><span>Enemy Medic </span><input/></label-->
+		<h5>highlight</h5>
+		<label data-show="nothing"><input type='radio' name='show'>Nothing</label>
+		<label data-show="commander-bonus"><input type='radio' name='show'>Commander bonus</label>
+		<label data-show="our-visibility"><input type='radio' name='show'>What we see</label>
+		<label data-show="enemy-visibility"><input type='radio' name='show'>What enemies see</label>
+		<label data-show="our-attackable"><input type='radio' name='show'>What can we attack</label>
+		<label data-show="enemy-attackable"><input type='radio' name='show'>What can enemies attack</label>
+		<h5>log</h5>
+		<pre id="log">
+		</pre>
+	</div>
+</body>
+</html>
