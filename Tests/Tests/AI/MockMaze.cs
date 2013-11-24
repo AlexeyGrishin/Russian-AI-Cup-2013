@@ -1,4 +1,5 @@
-﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI;
+﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk;
+using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using System;
@@ -103,4 +104,124 @@ namespace Tests.AI
         }
 
     }
+
+    public class Warrior2Mock : Warrior2
+    {
+
+        public int AHitpoints { get; set; }
+        public override int Hitpoints
+        {
+            get { return AHitpoints; }
+        }
+
+        public override bool IsSick
+        {
+            get { return AHitpoints <= MyStrategy.NeedHeeling; }
+        }
+
+
+
+        public int AActions { get; set; }
+        public override int Actions
+        {
+            get { return AActions; }
+        }
+
+        public TrooperStance APosition = TrooperStance.Standing;
+        public override TrooperStance Position
+        {
+            get { return APosition;  }
+        }
+
+        public override int GetDamage(Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model.TrooperStance stance)
+        {
+            return ADamage * (TrooperStance.Standing - stance + 1);
+        }
+
+        public override int GetDamage()
+        {
+            return ADamage;
+        }
+        public int ADamage { get; set; }
+
+
+        public bool AHasRation { get; set; }
+        public override bool HasFieldRation
+        {
+            get { return AHasRation; }
+        }
+
+        public bool AHasMedkit { get; set; }
+        public override bool HasMedkit
+        {
+            get { return AHasMedkit; }
+        }
+
+        public override int MaxActions
+        {
+            get { return 10; }
+        }
+
+        public bool AIsMedic { get; set; }
+        public override bool IsMedic
+        {
+            get { return AIsMedic; }
+        }
+
+        public override int MedkitHealth
+        {
+            get { return 20; }
+        }
+
+        public PossibleMove ALocation { get; set; }
+        public override PossibleMove Location
+        {
+            get { return ALocation; }
+        }
+
+        public int AAttackRange { get; set; }
+        public override int AttackRange
+        {
+            get { return AAttackRange; }
+        }
+
+        public bool AHasGrenade { get; set; }
+        public override bool HasGrenade
+        {
+            get { return AHasGrenade; }
+        }
+
+        public override int GrenadeRange
+        {
+            get { return 5; }
+        }
+
+        public override int GetGrenadeDamage(int delta)
+        {
+            return delta == 0 ? 80 : 60;
+        }
+
+        public int ShootCost = 3;
+        public override int Cost(ActionType type)
+        {
+            return type == ActionType.ThrowGrenade ? 8 : (type == ActionType.Shoot ? ShootCost : 2);
+        }
+
+        public override int FieldRationExtraPoints
+        {
+            get { return 3; }
+        }
+
+        public override int MedicHealth
+        {
+            get { return 30; }
+        }
+
+        public TrooperType AType { get; set; }
+        public override TrooperType Type { get { return AType; } }
+
+        public int AVisionRange { get; set; }
+        public override int VisionRange { get { return AVisionRange; } }
+    }
+
 }

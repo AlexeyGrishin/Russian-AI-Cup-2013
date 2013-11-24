@@ -70,9 +70,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             }
         }
 
-        public int CloserLevelWhere(Func<PossibleMove, bool> func)
+        public int CloserLevelWhere(Func<PossibleMove, bool> func, bool fromParent = false)
         {
-            var myLevel = func(this) ? Step : 555;
+            var myLevel = func(this) ? Step : 553;
             var childrenLevel = FurtherMoves.Count == 0 ? 555 : FurtherMoves.Select(m => m.CloserLevelWhere(func)).Min();
             return Math.Min(myLevel, childrenLevel);
         }
@@ -136,6 +136,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     item.Step = -1;
                     item.FurtherMoves.Clear();
                     item.Back = null;
+                    item.CanAttackFromHere = false;
+                    item.CanBeAttacked = false;
+                    item.CloserToEnemy = false;
+                    item.DistanceToEnemy = 0;
+                    item.DistanceToTeam = 0;
+                    item.FreeSpace = false;
                 }
             }
         }
@@ -157,7 +163,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             }
             myMove.ForEach(m =>
             {
-                m.FreeSpace = PointsAround(m).Count(fm => PointsAround(fm).Count() >= 3) >= 3;
+                Func<PossibleMove, bool> isCorridor = (p) => PointsAround(p).Count <= 2;
+                m.FreeSpace = !isCorridor(m) && !PointsAround(m).Any(isCorridor);
             });
             return myMove;
         }
@@ -217,6 +224,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             if (x < 0 || y < 0 || x >= map.GetLength(0) || y >= map.GetLength(1)) return null;
             return map[x, y];
         }
+
+        public int Width { get { return map.GetLength(0); } }
+        public int Height { get { return map.GetLength(1); } }
 
         private List<PossibleMove> PointsAround(PossibleMove move)
         {

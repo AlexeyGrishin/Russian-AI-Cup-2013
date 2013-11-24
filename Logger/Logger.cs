@@ -13,7 +13,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
     public class Logger
     {
 
-        private string name;
+        public string name;
         private string replayerHtml;
         private bool mapLogged = false;
         private bool givenName = false;
@@ -40,21 +40,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
             return (instance = instance ?? new Logger());
         }
 
-        internal void LogMap(World map, AI.Maze.RHWay way)
+        internal void LogMap(World map)
         {
             if (mapLogged) return;
-            var directions = new string[] {"", "^", ">", "v", "<"};
             var mapName = LogMapTxt(map);
-            LogMap(mapName, map.Cells.Select((col, ci) => col.Select((cell, ri) =>
-            {
-                var cells = way.GetCellsAt(Point.Get(ci, ri));
-                if (cells.Count() > 0)
-                {
-                    var txt = String.Join("", cells.Select(s => directions[(int)s.Direction]));
-                    return new Cell { Class = "way", Text = txt };
-                }
-                return new Cell { Class = cell == CellType.Free ? "free" : "wall" };
-            }).ToArray()).ToArray());
             LogMapVisibility(map, mapName);
         }
 
@@ -155,15 +144,18 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                 var c = new Cell();
                 if (cell != null)
                 {
-                    var trooper = world.Troopers.Where(t => t.X == cell.X && t.Y == cell.Y).FirstOrDefault();
-                    if (trooper != null)
+                    var trooperExt = battleCase.All.Where(t => t.X == x && t.Y == y).FirstOrDefault();
+                    //var trooper = world.Troopers.Where(t => t.X == cell.X && t.Y == cell.Y).FirstOrDefault();
+                    if (trooperExt != null)
                     {
+                        var trooper = trooperExt.orig;
                         c.Class = trooper.IsTeammate ? "friend" : "enemy";
                         c.Text = "cmsrt".Substring((int)trooper.Type, 1);
                         if (trooper.IsHoldingMedikit) c.Class += " medkit";
                         if (trooper.IsHoldingGrenade) c.Class += " grenade";
                         if (trooper.IsHoldingFieldRation) c.Class += "ration";
                         c.Class += " " + trooper.Type.ToString().ToLower();
+                        if (trooperExt.Noticed) c.Class += " noticed";
                     }
                     else
                     {
@@ -208,8 +200,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
         private void LogTrooper(Trooper trooper, StringBuilder builder)
         {
             builder.Append("{");
-            builder.AppendFormat(" friend: {6}, type: \"{0}\", points: {1}, grenade: {2}, medkit: {3}, ration: {4}, hitpoints: {5}, sick: {7}  ",
-                trooper.Type, trooper.ActionPoints, trooper.IsHoldingGrenade ? 1 : 0, trooper.IsHoldingMedikit ? 1 : 0, trooper.IsHoldingFieldRation ? 1 : 0, trooper.Hitpoints, trooper.IsTeammate ? 1 : 0, trooper.Ext().IsSick ? 1 : 0);
+            builder.AppendFormat(" friend: {6}, ghost: {8}, type: \"{0}\", points: {1}, grenade: {2}, medkit: {3}, ration: {4}, hitpoints: {5}, sick: {7}  ",
+                trooper.Type, trooper.ActionPoints, 
+                trooper.IsHoldingGrenade ? 1 : 0, trooper.IsHoldingMedikit ? 1 : 0, 
+                trooper.IsHoldingFieldRation ? 1 : 0, trooper.Hitpoints, 
+                trooper.IsTeammate ? 1 : 0, trooper.Ext().IsSick ? 1 : 0,
+                trooper.Ext().Noticed ? 1 : 0);
             builder.Append("}");
         }
 

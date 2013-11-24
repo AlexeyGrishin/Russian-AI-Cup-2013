@@ -15,10 +15,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public abstract int GetDamage(TrooperStance stance);
         public abstract int GetDamage();
         public abstract int GetGrenadeDamage(int distance);
+        public abstract TrooperType Type { get; }
+        public abstract TrooperStance Position { get; }
 
         public abstract PossibleMove Location { get; }
         public abstract int AttackRange { get; }
         public abstract int GrenadeRange { get; }
+        public abstract int VisionRange { get; }
 
         public abstract int Cost(ActionType type);
 
@@ -34,21 +37,32 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public int Cost(ActionDraft draft)
         {
             var action = ActionType.EndTurn;
+            var count = 1;
             switch (draft)
             {
                 case ActionDraft.EatFieldRation: action = ActionType.EatFieldRation; break;
                 case ActionDraft.HealAlly: action = ActionType.Heal; break;
                 case ActionDraft.HealSelf: action = ActionType.UseMedikit; break;
-                case ActionDraft.LieDown: action = ActionType.LowerStance; break;
-                case ActionDraft.StandUp: action = ActionType.LowerStance; break;
-                case ActionDraft.OnKneel: action = ActionType.LowerStance; break;
+                case ActionDraft.LieDown: 
+                    action = ActionType.LowerStance;
+                    count = Math.Abs(Position - TrooperStance.Prone);
+                    break;
+                case ActionDraft.StandUp: 
+                    action = ActionType.LowerStance; 
+                    count = Math.Abs(Position - TrooperStance.Standing);
+                    break;
+                case ActionDraft.OnKneel: 
+                    action = ActionType.LowerStance;
+                    count = Math.Abs(Position - TrooperStance.Kneeling);
+
+                    break;
                 case ActionDraft.Shoot: action = ActionType.Shoot; break;
                 case ActionDraft.StepFromEnemy: action = ActionType.Move; break;
                 case ActionDraft.StepToEnemy: action = ActionType.Move; break;
                 case ActionDraft.StepToSickAlly: action = ActionType.Move; break;
                 case ActionDraft.ThrowGrenade: action = ActionType.ThrowGrenade; break;
             }
-            return Cost(action);
+            return Cost(action, count);
         }
 
         public int Cost(ActionType type, int count)
@@ -92,7 +106,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             var currentDistance = Math.Abs(self.Location.X - enemy.Location.X) + Math.Abs(self.Location.Y - enemy.Location.Y);
             var myAttackRadius = Tool.GetRadius(self.AttackRange);
             var enemyAttackRadius = Tool.GetRadius(enemy.AttackRange);
-            self.Location.ForEach(a =>
+            Action<PossibleMove> processCell = (a =>
             {
                 a.CanAttackFromHere = maze.CanAttack(self, a.X, a.Y, enemy, enemy.Location.X, enemy.Location.Y) && myAttackRadius.Contains(Math.Abs(enemy.Location.X - a.X), Math.Abs(enemy.Location.Y - a.Y));
                 a.CanBeAttacked = maze.CanAttack(enemy, enemy.Location.X, enemy.Location.Y, self, a.X, a.Y) && enemyAttackRadius.Contains(Math.Abs(enemy.Location.X - a.X), Math.Abs(enemy.Location.Y - a.Y));
@@ -104,6 +118,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 a.CloserToEnemy = a.DistanceToEnemy < currentDistance;
                 a.DistanceToTeam = Allies.Count() > 0 ? Allies.Select(al => al.Location.DistanceTo(a)).Sum() : 999;
             });
+            self.Location.ForEach(processCell);
+            Allies.Select(a => a.Location).ToList().ForEach(processCell);
             WaysToEnemy = new List<IEnumerable<PossibleMove>>(5);
             self.Location.WhereLeafs(a => a.CloserToEnemy).ToList().ForEach(a =>
             {
@@ -123,6 +139,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 WayToSickAlly = WalkableMap.Instance().FindWay(self.Location, SickAlly.Location).ToList();
             //if (WayToSickAlly.Count > 1) WayToSickAlly.RemoveAt(WayToSickAlly.Count - 1);
         }
+
+        public IList<T> AllEnemies { get { return OtherEnemies.Concat(new List<T> { Enemy }).ToList(); } }
+        public IList<T> AllOurTroops { get { return Allies.Concat(new List<T> { Self }).ToList(); } }
+        public IList<T> All { get { return AllEnemies.Concat(AllOurTroops).ToList();  } }
 
         public T Self { get; private set; }
         public T Enemy { get; private set; }

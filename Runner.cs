@@ -1,4 +1,5 @@
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
+using System;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
@@ -10,7 +11,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static void Main(string[] args)
         {
             if (args.Length > 0) Logger.Logger.Name(args[0]);
-            new Runner(new[] {"127.0.0.1", "31001", "0000000000000000"}).run();
+            using (var sw = new System.IO.StreamWriter("res\\" + Logger.Logger.Instance().name + ".txt"))
+            {
+                Console.SetOut(sw);
+                new Runner(new[] { "127.0.0.1", "31001", "0000000000000000" }).run();
+            }
+            
         }
 
         private Runner(string[] args)

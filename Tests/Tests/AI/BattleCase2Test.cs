@@ -28,7 +28,7 @@ namespace Tests.AI
                 "        x2",
                 "         x",
             };
-            var maze = new MockMaze<Tests.AI.BattleResolutionTest.Warrior2Mock>(map);
+            var maze = new MockMaze<Warrior2Mock>(map);
             var MA = WalkableMap.Create(maze);
             var commander = maze.Trooper(TrooperType.Commander);
             var location = MA.BuildMapFrom(commander, 4);
@@ -62,7 +62,7 @@ namespace Tests.AI
                 " x * x ",
                 " x     "
             };
-            var maze = new MockMaze<Tests.AI.BattleResolutionTest.Warrior2Mock>(map);
+            var maze = new MockMaze<Warrior2Mock>(map);
             var MA = WalkableMap.Create(maze);
             var self = MockTool.FindChar(map, 'c');
             var target = MockTool.FindChar(map, '*');
@@ -84,7 +84,7 @@ namespace Tests.AI
                 " x   x ",
                 " x     "
             };
-            var maze = new MockMaze<Tests.AI.BattleResolutionTest.Warrior2Mock>(map);
+            var maze = new MockMaze<Warrior2Mock>(map);
             var MA = WalkableMap.Create(maze);
             var self = MockTool.FindChar(map, 'c');
             var target = MockTool.FindChar(map, '5').To(Direction.South);
@@ -94,6 +94,36 @@ namespace Tests.AI
             CollectionAssert.AreEqual(new List<PossibleMove> {
                 MA.Get(3, 0), MA.Get(4, 0), MA.Get(5, 0), MA.Get(6, 0), MA.Get(6, 1), MA.Get(6, 2), MA.Get(6, 3), MA.Get(6, 4), MA.Get(5, 4), MA.Get(4, 4), MA.Get(3, 4), MA.Get(3, 3),
             }, way.ToList());
+        }
+
+        [TestMethod]
+        public void Test_Attackable()
+        {
+            var map = new string[] {
+                "        ",
+                "        ",
+                "  c   ! ",
+                "  m     ",
+                "        ",
+                "        ",
+                "        "
+            };
+            var maze = new MockMaze<Positioned2Mock>(map);
+            var MA = WalkableMap.Create(maze);
+            var commander = maze.Trooper(TrooperType.Commander);
+            var medic = maze.Trooper(TrooperType.FieldMedic);
+            var enemy = MockTool.FindChar(map, '!');
+            var location = MA.BuildMapFrom(commander, 4, (p) => !maze.HasNotWallOrUnit(p.X, p.Y));
+            var medicLoc = MA.Get(medic);
+            var enemyLocation = MA.Get(enemy.X, enemy.Y);
+
+            var self2 = new Positioned2Mock { Location = location, AttackRange = 6 };
+            var medic2 = new Positioned2Mock { Location = medicLoc, AttackRange = 2 };
+            var enemy2 = new Positioned2Mock { Location = enemyLocation, AttackRange = 5 };
+            var battle = new BattleCase2<Positioned2Mock>(self2, enemy2, maze, new List<Positioned2Mock> {medic2});
+            Assert.IsTrue(location.CanBeAttacked);
+            Assert.IsTrue(medicLoc.CanBeAttacked);
+
         }
 
         [TestMethod]

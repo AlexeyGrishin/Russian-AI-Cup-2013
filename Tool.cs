@@ -1,4 +1,5 @@
-﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
+﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
+using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,48 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             return GetDirection(p1.X, p1.Y, p2.X, p2.Y);
         }
 
+        public static int GetDistance(Point p1, Point p2)
+        {
+            return Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y);
+        }
 
+        public static int GetDistance(Unit u1, Point u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+
+        public static int GetDistance(Point p1, Unit p2)
+        {
+            return Math.Abs(p1.X - p2.X) + Math.Abs(p1.Y - p2.Y);
+        }
+
+        public static int GetDistance(Unit u1, Unit u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+        public static int GetDistance(PossibleMove u1, Unit u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+
+
+        public static int GetDistance(Unit u1, PossibleMove u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+
+        public static int GetDistance(PossibleMove u1, PossibleMove u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+        public static int GetDistance(Point u1, PossibleMove u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
+        public static int GetDistance(PossibleMove u1, Point u2)
+        {
+            return GetDistance(Point.Get(u1.X, u1.Y), Point.Get(u2.X, u2.Y));
+        }
         public static Direction GetDirection(int x1, int y1, int x2, int y2)
         {
             var dx = x2 - x1;
@@ -129,5 +171,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             return radiuses[radius];
         }
 
+
+        internal static int GetDistance(Trooper u1, Move u2)
+        {
+            return GetDistance(u1, Point.Get(u2.X, u2.Y));
+        }
+
+        internal static int GetDistance(Warrior2 u1, Warrior2 u2)
+        {
+            return GetDistance(u1.Location, u2.Location);
+        }
     }
 }

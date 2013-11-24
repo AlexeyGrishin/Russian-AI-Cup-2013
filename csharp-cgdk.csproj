@@ -16,6 +16,7 @@
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation />
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -28,7 +29,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -71,14 +71,11 @@
   <ItemGroup>
     <Compile Include="BattleCase2.cs" />
     <Compile Include="BattleStrategy.cs" />
+    <Compile Include="FollowPoint.cs" />
     <Compile Include="MovingArea.cs" />
     <Compile Include="Strategies.cs" />
-    <Compile Include="Group2.cs" />
-    <Compile Include="GroupObserver2.cs" />
     <Compile Include="HelperExtensions.cs" />
     <Compile Include="MazeObserver.cs" />
-    <Compile Include="RHWay.cs" />
-    <Compile Include="RHWayFinder.cs" />
     <Compile Include="TrooperExt.cs" />
     <Compile Include="MovingStrategy.cs" />
     <Compile Include="Tool.cs" />
@@ -106,12 +103,12 @@
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
       <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <ProductName>Microsoft .NET Framework 4 %28x86 и x64%29</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <ProductName>Клиентский профиль .NET Framework 3.5 с пакетом обновления 1 %28SP1%29</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">

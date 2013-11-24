@@ -55,10 +55,10 @@
   <ItemGroup>
     <Compile Include="AI\MockMaze.cs" />
     <Compile Include="AI\ToolTest.cs" />
-    <Compile Include="AI\RightHandObserverTest.cs" />
-    <Compile Include="AI\GroupObserver2Test.cs" />
     <Compile Include="AI\BattleResolutionTest.cs" />
     <Compile Include="AI\BattleCase2Test.cs" />
+    <Compile Include="AI\FollowPointTest.cs" />
+    <Compile Include="AI\TrooperExtTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

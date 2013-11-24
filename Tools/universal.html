@@ -14,7 +14,7 @@
 		var postRender = function() {}
 		
 		function add(portion) {
-			(data.steps ? data).push(portion);
+			data.push(portion);
 		}
 		
 		$(function() {
@@ -60,15 +60,15 @@
 			}
 			
 			r.steps = function render_steps() {
-				(data.steps ? data).forEach(function(step, idx) {
+				data.forEach(function(step, idx) {
 					$("#step").append("<option data-step='" + idx + "'>" + step.name + "</option>");
 				});
 				$("#step2").hide();
 				$("#step").change(function() {
 					var stepdix = $("#step").find("option:selected").attr("data-step");
-					render((data.steps ? data)[stepdix].data);
-					postRender((data.steps ? data)[stepdix].data, (data.steps ? data)[stepdix]);
-					$("#log").html((data.steps ? data)[stepdix].log.join("\n\n"));
+					render(data[stepdix].data);
+					postRender(data[stepdix].data, data[stepdix]);
+					$("#log").html(data[stepdix].log.join("\n\n"));
 				});
 				$("#step option").eq(0).click();
 				$("#step").change();

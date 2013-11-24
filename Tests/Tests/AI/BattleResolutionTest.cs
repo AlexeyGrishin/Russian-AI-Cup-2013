@@ -15,112 +15,6 @@ namespace Tests.AI
 
 
 
-        public class Warrior2Mock : Warrior2
-        {
-
-            public int AHitpoints { get; set; }
-            public override int Hitpoints
-            {
-                get { return AHitpoints; }
-            }
-
-            public override bool IsSick
-            {
-                get { return AHitpoints <= MyStrategy.NeedHeeling; }
-            }
-
-            
-
-            public int AActions { get; set; }
-            public override int Actions
-            {
-                get { return AActions; }
-            }
-
-
-            public override int GetDamage(Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model.TrooperStance stance)
-            {
-                return stance == TrooperStance.Standing ? ADamage : ADamage * 2;
-            }
-
-            public override int GetDamage()
-            {
-                return ADamage;
-            }
-            public int ADamage { get; set; }
-
-
-            public bool AHasRation { get; set; }
-            public override bool HasFieldRation
-            {
-                get { return AHasRation; }
-            }
-
-            public bool AHasMedkit { get; set; }
-            public override bool HasMedkit
-            {
-                get { return AHasMedkit; }
-            }
-
-            public override int MaxActions
-            {
-                get { return 10; }
-            }
-
-            public bool AIsMedic { get; set; }
-            public override bool IsMedic
-            {
-                get { return AIsMedic; }
-            }
-
-            public override int MedkitHealth
-            {
-                get { return 20; }
-            }
-
-            public PossibleMove ALocation { get; set; }
-            public override PossibleMove Location
-            {
-                get { return ALocation;  }
-            }
-
-            public int AAttackRange { get; set; }
-            public override int AttackRange
-            {
-                get { return AAttackRange; }
-            }
-
-            public bool AHasGrenade { get; set; }
-            public override bool HasGrenade
-            {
-                get { return AHasGrenade; }
-            }
-
-            public override int GrenadeRange
-            {
-                get { return 5; }
-            }
-
-            public override int GetGrenadeDamage(int delta)
-            {
-                return delta == 0 ? 80 : 60;
-            }
-
-            public override int Cost(ActionType type)
-            {
-                return type == ActionType.ThrowGrenade ? 8 : 2;
-            }
-
-            public override int FieldRationExtraPoints
-            {
-                get { return 3; }
-            }
-
-            public override int MedicHealth
-            {
-                get { return 30; }
-            }
-        }
 
         class DumbMaze : IWalkingMaze, IWarriorMaze<Warrior2Mock>
         {
@@ -158,8 +52,8 @@ namespace Tests.AI
             var MA = WalkableMap.Create(maze);
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(4, 0);
-            var self = new Warrior2Mock { AActions = 10, ADamage = 20, AHitpoints = 100, AAttackRange = 5, ALocation = selfLoc };
-            var enemy = new Warrior2Mock { AActions = 10, ADamage = 20, AHitpoints = 100, AAttackRange = 5, ALocation = enemyLoc };
+            var self = new Warrior2Mock { AActions = 13, ADamage = 20, AHitpoints = 100, AAttackRange = 5, ALocation = selfLoc };
+            var enemy = new Warrior2Mock { AActions = 10, ADamage = 20, AHitpoints = 190, AAttackRange = 5, ALocation = enemyLoc };
 
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze);
             var resolution = Battle.All(battle);
@@ -223,7 +117,7 @@ namespace Tests.AI
             var MA = WalkableMap.Create(maze);
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(6, 0);
-            var allyLoc = MA.Get(7, 0);
+            var allyLoc = MA.Get(5, 0);
             var self = new Warrior2Mock { AActions = 12, ADamage = 15, AHitpoints = 70, AAttackRange = 5, AHasGrenade = true, ALocation = selfLoc };
             var enemy = new Warrior2Mock { AActions = 12, ADamage = 5, AHitpoints = 80, AAttackRange = 6, ALocation = enemyLoc };
             var ally = new Warrior2Mock { AActions = 12, ADamage = 40, AHitpoints = 50, AAttackRange = 6, ALocation = allyLoc };
@@ -326,11 +220,11 @@ namespace Tests.AI
             var MA = WalkableMap.Create(maze);
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(6, 0);
-            var self = new Warrior2Mock { AActions = 4, ADamage = 10, AHitpoints = 70, AAttackRange = 6, ALocation = selfLoc, AHasRation = true };
-            var enemy = new Warrior2Mock { AActions = 10, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
+            var self = new Warrior2Mock { AActions = 4, ADamage = 25, AHitpoints = 100, AAttackRange = 6, ALocation = selfLoc, AHasRation = true, ShootCost = 2 };
+            var enemy = new Warrior2Mock { AActions = 8, ADamage = 15, AHitpoints = 101, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
-            CollectionAssert.AreEqual(new List<ActionType> { ActionType.EatFieldRation, ActionType.Shoot, ActionType.Shoot, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.EatFieldRation, ActionType.LowerStance, ActionType.Shoot, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
         }
 
         [TestMethod]
@@ -344,9 +238,65 @@ namespace Tests.AI
             var enemy = new Warrior2Mock { AActions = 10, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
-            CollectionAssert.AreEqual(new List<ActionType> { ActionType.LowerStance, ActionType.EatFieldRation, ActionType.Shoot, ActionType.Shoot, ActionType.Shoot, ActionType.Shoot, ActionType.RaiseStance}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.LowerStance, ActionType.LowerStance, ActionType.EatFieldRation, ActionType.Shoot, ActionType.Shoot, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
         }
 
+        [TestMethod]
+        public void Test_Prone()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
+            var enemyLoc = MA.Get(6, 0);
+            var self = new Warrior2Mock { AActions = 7, ADamage = 10, AHitpoints = 70, AAttackRange = 6, ALocation = selfLoc};
+            var enemy = new Warrior2Mock { AActions = 10, ADamage = 10, AHitpoints = 30, AAttackRange = 6, ALocation = enemyLoc };
+            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
+            var resolution = Battle.All(battle);
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.LowerStance, ActionType.LowerStance, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+
+        }
+
+        [TestMethod]
+        public void Test_Move_After_Prone()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 12);
+            var enemyLoc = MA.Get(7, 0);
+            var self = new Warrior2Mock { AActions = 9, ADamage = 10, AHitpoints = 70, AAttackRange = 6, ALocation = selfLoc, APosition = TrooperStance.Prone };
+            var enemy = new Warrior2Mock { AActions = 6, ADamage = 4, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
+            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
+            var resolution = Battle.All(battle);
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.RaiseStance, ActionType.RaiseStance, ActionType.Move, ActionType.Shoot }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+
+        }
+
+        [TestMethod]
+        public void Test_Damage()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(2, 0), 10);
+            var enemyLoc = MA.Get(8, 0);
+            var self = new Warrior2Mock { AActions = 4, ADamage = 2, AHitpoints = 55, AAttackRange = 6, ALocation = selfLoc };
+            var enemy = new Warrior2Mock { AActions = 6, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
+            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
+            var resolution = Battle.All(battle);
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+        }
+        [TestMethod]
+        public void Test_Damage_more()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(2, 0), 10);
+            var enemyLoc = MA.Get(8, 0);
+            var self = new Warrior2Mock { AActions = 4, ADamage = 8, AHitpoints = 55, AAttackRange = 6, ALocation = selfLoc };
+            var enemy = new Warrior2Mock { AActions = 6, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
+            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
+            var resolution = Battle.All(battle);
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+        }
         [TestMethod]
         public void Test_Medkit()
         {
@@ -354,8 +304,8 @@ namespace Tests.AI
             var MA = WalkableMap.Create(maze);
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(6, 0);
-            var self = new Warrior2Mock { AActions = 4, ADamage = 10, AHitpoints = 30, AAttackRange = 6, ALocation = selfLoc, AHasMedkit = true };
-            var enemy = new Warrior2Mock { AActions = 10, ADamage = 9, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
+            var self = new Warrior2Mock { AActions = 5, ADamage = 9, AHitpoints = 30, AAttackRange = 6, ALocation = selfLoc, AHasMedkit = true };
+            var enemy = new Warrior2Mock { AActions = 8, ADamage = 9, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
             CollectionAssert.AreEqual(new List<ActionType> { ActionType.UseMedikit, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());

@@ -105,7 +105,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 var te = new TrooperExt(trooper);
                 if (trooper.IsTeammate)
                 {
-                    te.TurnOrder = nextOrder;
                     order[trooper.Type] = nextOrder;
                     nextOrder++;
                 }
@@ -114,10 +113,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             }
         }
 
-        public static int GetMaxSteps(this Trooper trooper)
-        {
-            return trooper.ActionPoints / 2;    //TODO: get from Game
-        }
 
         public class WorldMaze: IMaze, IWalkingMaze, IWarriorMaze<TrooperExt>
         {
@@ -166,6 +161,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 res += " " + move.X + "," + move.Y;
             }
             return res;
+        }
+
+        public static int GetScore(this World world)
+        {
+            return world.Players.Single(p => p.Id == MyStrategy.PlayerId).Score;
         }
     }
 }

@@ -3,7 +3,6 @@ using System.Linq;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger;//[DEBUG]
-using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Maze;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
@@ -13,36 +12,42 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private readonly Random random = new Random();
 
         public static int Turn = 0;
+        public static long PlayerId = -1;
 
         public static int NeedHeeling = 60;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
+        public static double OurEnemyDamageCoeff = 0.7;
         public static int MinDistance = 1;
         public static int MaxDistance = 3;
         public static int BackDistance = 5;
-        public static int MinDistanceToTeamInBattle = 3;
+        public static int MinDistanceToTeamInBattle = 2;
         public static int MaxStepsEnemyWillDo = 2;
+        public static double NotStandingDamageCoeff = 0.5;
+
+
 
         public void Move(Trooper self, World world, Game game, Move move)
         {
             Turn = world.MoveIndex;
+            PlayerId = self.PlayerId;
             Console.WriteLine("----- Turn: " + Turn + " [" + self.Type + "]"); //[DEBUG]
             self.Update(game);
             world.Troopers.ToList().ForEach(t => t.Update(game));
-            var way = RHWayFinder.Instance().DefineWay(0, world.ToMaze(), self.X, self.Y);
             var MA = WalkableMap.Instance(world.ToMaze());
-            MA.BuildMapFrom(self.GetPosition(), (int)self.VisionRange * 2, p => !world.ToMaze().HasNotWallOrUnit(p.X, p.Y));
-            Logger.Logger.Instance().LogMap(world, way);//[DEBUG]
+            MA.BuildMapFrom(self.GetPosition(), (int)world.Width, p => !world.ToMaze().HasNotWallOrUnit(p.X, p.Y));
+            Logger.Logger.Instance().LogMap(world);//[DEBUG]
+
             var BS = new BattleStrategy();
-            var visibleEnemies = world.Troopers.Where(t => !t.IsTeammate);
             bool inBattle = false;
-            if (visibleEnemies.Count() > 0)
+            if (BS.IsInDanger(self, world))
             {
                 BS.DoMove(self, world, move);
                 inBattle = true;
             }
             else
             {
+                Console.WriteLine("There is no danger...");
                 BS.CancelSteps(self);
                 
             }
@@ -77,7 +82,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 if (!move.IsMade())
                 {
-                    var bonusesAround = world.Bonuses.Where(b => b.GetDistanceTo(self) == 1).Where(b => self.CanTake(b.Type)).Where(b => !way.OnWay(Point.Get(b.X, b.Y), self.GetPosition()));
+                    var bonusesAround = world.Bonuses.Where(b => b.GetDistanceTo(self) == 1).Where(b => self.CanTake(b.Type)).Where(b => !world.Troopers.Any(t => t.X == b.X && t.Y == b.Y));
                     if (bonusesAround.Count() > 0)
                     {
                         Console.WriteLine("There are bonuses around which are not on way: {0}", String.Join(",", bonusesAround.Select(b => b.Type.ToString())));
@@ -85,25 +90,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                         move.Action = ActionType.Move;
                         move.X = bonus.X;
                         move.Y = bonus.Y;
-                        RG.Instance.OnStop(world);
                     }
                 }
                 if (!move.IsMade() && self.ActionPoints >= game.StandingMoveCost)
                 {
-                    RG.Instance.DoMove(self, world, move);
+                    FollowToPoints.Instance.DoMove(self, world, move);
                     Console.WriteLine(String.Format("{0} goes {1}", self.Type, move.Direction));    //[DEBUG]
                 }
-                else
-                {
-                    RG.Instance.OnStop(world);
-                }
+
             }
-            else
-            {
-                RG.Instance.OnStop(world);
-            }
+
         }
-        
+
+
     }
 
     public static class TrooperExtensions

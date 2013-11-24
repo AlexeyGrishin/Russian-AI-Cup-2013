@@ -1,4 +1,4 @@
-﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Maze;
+﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using System;
 using System.Collections.Generic;
@@ -14,25 +14,26 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         void OnStop(World world);
     }
 
-    public class RG: IMovingStrategy
+    public class FollowToPoints: IMovingStrategy
     {
-        private bool walking = false;
-        private GroupObserver2 observer = new GroupObserver2(MyStrategy.MinDistance, MyStrategy.MaxDistance, MyStrategy.BackDistance);
-        public void OnStop(World world)
-        {
-            world.Troopers.Where(t => t.IsTeammate).Select(t => t.Ext()).ToList().ForEach(t => t.OnWay = false);
-        }
+        private FollowPoint follow = null;
+
         public void DoMove(Trooper self, World world, Move move)
         {
-            IEnumerable<Moveable> alltogether = world.Troopers.Where(t => t.IsTeammate).Select(t => t.Ext());
-            var selfExt = self.Ext();
-            selfExt.Move = move;
-            observer.OnTurn(selfExt, world.ToMaze());
-            observer.SuggestMove(selfExt, new Group2(alltogether.ToList()), world.ToMaze());
-            //TODO: check move possibility
-            //TODO: check still on way
+            if (follow == null)
+            {
+                follow = new FollowPoint(self.Ext(), MyStrategy.BackDistance, WalkableMap.Instance());
+            }
+            follow.SuggestMove(self.Ext(), world.Troopers.Where(t => t.IsTeammate).Select(t => t.Ext()), move);
         }
 
-        public static RG Instance = new RG();
+        public void OnStop(World world)
+        {
+            //nothing
+        }
+
+        public static FollowToPoints Instance = new FollowToPoints();
     }
+
+
 }

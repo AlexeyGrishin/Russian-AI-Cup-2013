@@ -1,5 +1,4 @@
 ﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
-using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Maze;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using System;
 using System.Collections.Generic;
@@ -8,15 +7,10 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 {
-    public class TrooperExt : Warrior2, Positioned2, Moveable//, Pointed
+    public class TrooperExt : Warrior2, Positioned2//, Pointed
     {
         internal Trooper orig;
         public Game Game { get; set; }
-
-        public int WayIndex { get; set; }
-        public int TurnOrder { get; set; }
-        public Move Move { get; set; }
-        public bool OnWay { get; set; }
 
         public int X { get { return orig.X; } }
         public int Y { get { return orig.Y; } }
@@ -32,11 +26,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public IList<Move> NextMoves { get; set; }
 
+        public override TrooperStance Position
+        {
+            get { return orig.Stance; }
+        }
+
         public TrooperExt(Trooper orig)
         {
             this.orig = orig;
-            WayIndex = -1;
-            WayToWay = null;
             NextMoves = new List<Move>();
         }
 
@@ -58,18 +55,23 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
         }
 
 
-        public void DoMove(Direction direction, int wayIdx)
+        public void CheckAttackList(IEnumerable<Point> enumerable)
         {
-            Move.Move(direction);
-            WayIndex = wayIdx;
+            if (!HasNextMove()) return;
+            var attackPoint = NextMoves.Where(m => m.Action == ActionType.Shoot || m.Action == ActionType.ThrowGrenade).Select(m => Point.Get(m.X, m.Y)).FirstOrDefault();
+            if (attackPoint == null) return;
+            var found = enumerable.Any(e => e.X == attackPoint.X && e.Y == attackPoint.Y);
+            if (found) return;
+            if (NextMoves.Any(m => m.Action == ActionType.ThrowGrenade))
+            {
+                found = enumerable.Any(e => Tool.GetDistance(e, attackPoint) == 1);
+            }
+            if (!found)
+            {
+                Console.WriteLine("Our enemy disappeared, so cancel orders");
+                NextMoves.Clear();
+            }
         }
-
-        public void Wait(string reason)
-        {
-            Console.WriteLine(String.Format("{0} waits: {1}", orig.Type, reason));
-            Move.Wait();
-        }
-
 
 
         public override bool HasGrenade
@@ -87,6 +89,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
             if (delta > 1) return 0;
             return delta == 0 ? Game.GrenadeDirectDamage : Game.GrenadeCollateralDamage;
         }
+
+        public bool Noticed { get; set; }
 
         public override int FieldRationExtraPoints
         {
@@ -191,12 +195,35 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override string ToString()
         {
-            return orig.Type + "[" + orig.Hitpoints + "]/" + orig.ActionPoints + " at (" + orig.X + "," + orig.Y + ")";
+            return (Noticed ? "*" : " ") + orig.Type + "[" + orig.Hitpoints + "]/" + orig.ActionPoints + " at (" + orig.X + "," + orig.Y + ")";
         }
+
+        private int scoreBeforeShoot = -1;
+        public void WasShoot(int score)
+        {
+            scoreBeforeShoot = score;
+        }
+
+        public bool WasntReallyShoot(int score)
+        {
+            return scoreBeforeShoot != -1 && score - scoreBeforeShoot < Game.TrooperDamageScoreFactor;
+        }
+
+        public void WasNotShoot()
+        {
+            scoreBeforeShoot = -1;
+        }
+
+
 
         public bool Can(ActionType actionType)
         {
             return Can(actionType, 1, orig.ActionPoints);
         }
+
+        public override TrooperType Type { get { return orig.Type; } }
+
+        public override int VisionRange { get { return (int)orig.VisionRange; } }
+
     }
 }
