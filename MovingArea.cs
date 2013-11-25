@@ -151,8 +151,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             Clear();
             int x = point.X, y = point.Y;
             var myMove = Get(x, y);
-            if (myMove == null)
-                myMove = null;
             IList<PossibleMove> list = new List<PossibleMove> { myMove };
             var step = 0;
             myMove.Step = 0;
@@ -167,6 +165,36 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 m.FreeSpace = !isCorridor(m) && !PointsAround(m).Any(isCorridor);
             });
             return myMove;
+        }
+
+        public int FindDistance(PossibleMove from, int limit, Func<PossibleMove, bool> criteria)
+        {
+            IList<PossibleMove> list = new List<PossibleMove> { from };
+            IList<PossibleMove> processed = new List<PossibleMove>();
+            var step = 0;
+            while (step < limit && list.Count > 0)
+            {
+                var toProcess = new List<PossibleMove>();
+                toProcess.AddRange(list);
+                list.Clear();
+                foreach (var move in toProcess)
+                {
+                    if (criteria(move)) return step;
+                    foreach (var next in PointsAround(move))
+                    {
+                        if (criteria(next)) return step+1;
+                        if (!toProcess.Contains(next) && !processed.Contains(next) && !list.Contains(next))
+                        {
+                            list.Add(next);
+                        }
+                    }
+                    processed.Add(move);
+                }
+                
+                step++;
+            }
+            return -1;
+            
         }
 
         public IEnumerable<PossibleMove> FindWay(PossibleMove from, Func<PossibleMove, bool> criteria)
@@ -188,6 +216,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         }
 
         public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to)
+        {
+            return FindWay(from, to.Point);
+        }
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to)
         {
             if (from.Step != 0) throw new Exception("Call BuildMapFrom first for this point");
             var minKnownDistance = Math.Abs(from.X - to.X) + Math.Abs(from.Y - to.Y);

@@ -11,12 +11,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
     {
 
         private static List<Trooper> oldEnemies = new List<Trooper>();
-        private int oldEnemiesTurn = -5;
+        private static int oldEnemiesTurn = -5;
 
         public bool IsInDanger(Trooper self, World world)
         {
             var visibleEnemies = world.Troopers.Where(t => !t.IsTeammate);
-            if (MyStrategy.Turn - oldEnemiesTurn > 3)
+            if (MyStrategy.Turn - oldEnemiesTurn > 10)
             {
                 oldEnemies.Clear();
             }
@@ -49,12 +49,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             var enemies = world.Troopers.Where(t => !t.IsTeammate);
             self.Ext().CheckAttackList(enemies.Concat(oldEnemies).Select(e => e.GetPosition()));
+            foreach (var enemy in enemies) enemy.Ext().Noticed = false;
+            enemies = enemies.Concat(oldEnemies).OrderBy(e => e.Hitpoints);
+            Console.WriteLine("Visible enemies are: " + String.Join(",", enemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
+            Console.WriteLine("Old known enemies are: " + String.Join(",", oldEnemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
             if (!self.Ext().HasNextMove())
             {
-                foreach (var enemy in enemies) enemy.Ext().Noticed = false;
-                Console.WriteLine("Visible enemies are: " + String.Join(",", enemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
-                Console.WriteLine("Old known enemies are: " + String.Join(",", oldEnemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
-                enemies = enemies.Concat(oldEnemies).OrderBy(e => e.Hitpoints);
                 var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id);
                 bool done = false;
                 var resolutions = new List<StrategyResult>();
@@ -85,9 +85,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 {
                     self.Ext().AddMove(new Move().Wait());
                 }
-                oldEnemies = enemies.ToList();
-                oldEnemiesTurn = MyStrategy.Turn;
             }
+            if (oldEnemies.Count == 0)
+                oldEnemiesTurn = MyStrategy.Turn;
+            oldEnemies = enemies.ToList();
             self.Ext().ExecuteMove(move);
             PostProcessMove(self, move, world);
 

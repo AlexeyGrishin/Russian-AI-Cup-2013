@@ -46,6 +46,20 @@ namespace Tests.AI
         }
         
         [TestMethod]
+        public void Walls()
+        {
+            Init(new string[] {
+                "x    ",
+                " c   ",
+                "     ",
+                "     ",
+                "     "
+            });
+            SuggestMove(commander);
+            AssertMove(commander, Direction.North);
+
+        }
+        [TestMethod]
         public void Single_Observe()
         {
             Init(new string[] {
@@ -108,6 +122,7 @@ namespace Tests.AI
         public void CommanderStuck()
         {
             Init(new string[] {
+                "       ",
                 "m      ",
                 " x     ",
                 "cx     ",
@@ -122,6 +137,8 @@ namespace Tests.AI
             //now get stuck
             SuggestMove(commander);
             AssertNoMove(commander);
+            SuggestMove(medic);
+            AssertMove(medic, Direction.North);
             SuggestMove(medic);
             AssertMove(medic, Direction.North);
             SuggestMove(medic);

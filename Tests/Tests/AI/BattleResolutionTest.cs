@@ -310,6 +310,53 @@ namespace Tests.AI
             var resolution = Battle.All(battle);
             CollectionAssert.AreEqual(new List<ActionType> { ActionType.UseMedikit, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
         }
+
+        [TestMethod]
+        public void Case1()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(0, 5), 30);
+            var medicLoc = MA.Get(1, 0);
+            var solLoc = MA.Get(0, 1);
+            var comLoc = MA.Get(2, 2);
+            var self = new Warrior2Mock { AActions = 10, ADamage = 25, AHitpoints = 70, AAttackRange = 8, ALocation = selfLoc, AHasMedkit = true, AHasGrenade = true };
+            var med = new Warrior2Mock { AActions = 12, ADamage = 9, AHitpoints = 100, AAttackRange = 5, ALocation = medicLoc };
+            var com = new Warrior2Mock { AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 8, ALocation = comLoc};
+            var sol = new Warrior2Mock { AActions = 12, ADamage = 25, AHitpoints = 120, AAttackRange = 9, ALocation = solLoc, AHasGrenade = true };
+            var battle = new BattleCase2<Warrior2Mock>(self, med, maze, new List<Warrior2Mock> { }, new List<Warrior2Mock> {com, sol});
+            var resolution = Battle.All(battle);
+        }
+
+
+        [TestMethod]
+        public void Case2()
+        {
+            var maze = new MockMaze<Warrior2Mock>(new string[] {
+                "                     ",
+                "                     ",
+                "          !          ",
+                "                     ",
+                "       xxxx          ",
+                "       xxxx          ",
+                "       xxxx          ",
+                "       xxxx          ",
+                "          cm         ",
+                "          s          ",
+
+            });
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(maze.Trooper(TrooperType.FieldMedic), 30);
+            var enemyLoc = MA.Get(maze.FindChar('!'));
+            var solLoc = MA.Get(maze.Trooper(TrooperType.Soldier));
+            var comLoc = MA.Get(maze.Trooper(TrooperType.Commander));
+            var self = new Warrior2Mock { AActions = 12, ADamage = 9, AHitpoints = 100, AAttackRange = 5, ALocation = selfLoc };
+            var com = new Warrior2Mock { AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 8, ALocation = comLoc };
+            var sol = new Warrior2Mock { AActions = 12, ADamage = 25, AHitpoints = 120, AAttackRange = 9, ALocation = solLoc, AHasGrenade = true };
+            var enemy = new Warrior2Mock { AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 7, ALocation = enemyLoc, AHasGrenade = true };
+            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { com, sol });
+            var resolution = Battle.All(battle);
+        }
     
     
     }

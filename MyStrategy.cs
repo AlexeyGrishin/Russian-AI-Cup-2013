@@ -17,11 +17,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int NeedHeeling = 60;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
-        public static double OurEnemyDamageCoeff = 0.7;
-        public static int MinDistance = 1;
-        public static int MaxDistance = 3;
-        public static int BackDistance = 5;
-        public static int MinDistanceToTeamInBattle = 2;
+        public static double OurEnemyDamageCoeff = 0.6;//TODO: tet with 2
+        public static int BackDistance = 6;
+        public static int CloseDistance = 3;
+        public static int MinDistanceToTeamInBattle = 3;
         public static int MaxStepsEnemyWillDo = 2;
         public static double NotStandingDamageCoeff = 0.5;
 
@@ -83,7 +82,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if (!move.IsMade())
                 {
                     var bonusesAround = world.Bonuses.Where(b => b.GetDistanceTo(self) == 1).Where(b => self.CanTake(b.Type)).Where(b => !world.Troopers.Any(t => t.X == b.X && t.Y == b.Y));
-                    if (bonusesAround.Count() > 0)
+                    if (bonusesAround.Count() > 0 && self.Ext().Can(ActionType.Move)) 
                     {
                         Console.WriteLine("There are bonuses around which are not on way: {0}", String.Join(",", bonusesAround.Select(b => b.Type.ToString())));
                         var bonus = bonusesAround.FirstOrDefault();

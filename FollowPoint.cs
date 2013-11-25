@@ -13,11 +13,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private int checkPointIdx;
         private int backDistance;
         private WalkableMap map;
+        private int closeDistance;
 
-        public FollowPoint(Warrior2 self, int backDistance, WalkableMap walkableMap)
+        public FollowPoint(Warrior2 self, int backDistance, WalkableMap walkableMap, int closeDistance = 0)
         {
             this.map = walkableMap;
             this.backDistance = backDistance;
+            this.closeDistance = closeDistance;
             var corners = new Point[] { Point.Get(0, 0), Point.Get(map.Width - 1, 0), Point.Get(0, map.Height - 1), Point.Get(map.Width - 1, map.Height - 1) };
             var center = Point.Get(map.Width >> 1, map.Height >> 1);
             var nearestCorner = corners.Select(c => new { Point = c, Distance = Tool.GetDistance(self.Location, c) }).OrderBy(d => d.Distance).First().Point;
@@ -44,13 +46,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         }
 
         private TrooperType eyesType;
-        private int maxVis, globalMaxVis;
+        private int maxVis, globalMaxVis = -1;
 
         private void Analyze(IEnumerable<Warrior2> troopers)
         {
             maxVis = (int)troopers.Select(t => t.VisionRange).Max();
             if (globalMaxVis == -1) globalMaxVis = maxVis;
-            eyesType = troopers.First(t => t.VisionRange == maxVis).Type;
+            eyesType = troopers.OrderBy(t => t.Type).First(t => t.VisionRange == maxVis).Type;
         }
 
         private bool IsEyes(Warrior2 trooper)
@@ -66,6 +68,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             List<PossibleMove> way = null;
             if (IsEyes(self))
             {
+                var distanceToTarget = Tool.GetDistance(self.Location, CheckPoint);
+                if (distanceToTarget <= closeDistance)
+                {
+                    Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");
+                    GoNext();
+                }
                 var stepsLeft = self.Actions / self.Cost(ActionType.Move);
                 var possibleEnemyAt = (int)(1 + globalMaxVis - self.VisionRange);
                 if (stepsLeft <= possibleEnemyAt)
@@ -83,7 +91,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 else
                 {
-                    way = map.FindWay(self.Location, map.Get(CheckPoint)).ToList();
+                    way = map.FindWay(self.Location, CheckPoint).ToList();
                     Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");
                 }
             }
@@ -91,7 +99,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             {
                 if (eyesStuck)
                 {
-                    way = map.FindWay(self.Location, map.Get(CheckPoint)).ToList();
+                    way = map.FindWay(self.Location, CheckPoint).ToList();
                     Console.WriteLine("Unit[" + self.Type + "] goes to checkpoint because eyes are blocked");
 
                 }

@@ -195,7 +195,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "come and throw grenade", ActionDraft.StepToEnemy, 0, 3, ActionDraft.ThrowGrenade);
             }
             Add(list, "go to enemy", ActionDraft.StepToEnemy, 1, 5);
-            Add(list, "go away from enemy", ActionDraft.StepFromEnemy, 1, 2 + battleCase.OtherEnemies.Count);
+            Add(list, "go away from enemy", ActionDraft.StepFromEnemy, 1, 5);
             Add(list, "stand still", ActionDraft.Skip);
             if (battleCase.Self.IsMedic && battleCase.SickAlly != null)
             {
@@ -367,7 +367,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 }
                 else if (distance != 0)
                 {
-                    if (!Move(sr, way, distance, battleCase, ref points, ref currentLocation, ref currentPosition)) return sr;
+                    if (!Move(sr, way, distance, battleCase, ref points, ref currentLocation, ref currentPosition, ref hasRation)) return sr;
                     overallDistance += distance;
                     distance = 0;
                 }
@@ -420,7 +420,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             }
             if (distance > 0)
             {
-                if (!Move(sr, way, distance, battleCase, ref points, ref currentLocation, ref currentPosition)) return sr;
+                if (!Move(sr, way, distance, battleCase, ref points, ref currentLocation, ref currentPosition, ref hasRation)) return sr;
             }
             if (sr.Moves.Any(m => m.Action == ActionType.EatFieldRation))
             {
@@ -441,12 +441,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         private static void ExtraRation<T>(StrategyResult sr, BattleCase2<T> battleCase, ref int points, ref bool hasRation) where T: Warrior2
         {
-            if (hasRation && points < battleCase.Self.MaxActions && battleCase.Self.Can(ActionType.EatFieldRation, 1, points))
-            {
-                sr.Moves.Add(new Move { Action = ActionType.EatFieldRation, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y  });
-                points += battleCase.Self.FieldRationExtraPoints;
-                hasRation = false;
-            }
+            if (hasRation) 
+                if (points < battleCase.Self.MaxActions && battleCase.Self.Can(ActionType.EatFieldRation, 1, points))
+                {
+                    sr.Moves.Add(new Move { Action = ActionType.EatFieldRation, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y  });
+                    points += battleCase.Self.FieldRationExtraPoints;
+                    hasRation = false;
+                }
 
         }
 
@@ -454,8 +455,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             public Warrior2 Warrior { get; set; }
             public PossibleMove Location { get; set; }
-            public bool Alive { get; set; }
+            public bool Alive { get { return Hitpoints > 0; } }
             public TrooperStance Position { get; set; }
+            public int Hitpoints { get; set; }
+            public int Temp { get; set; }
+            public bool TempAlive { get { return Hitpoints - Temp > 0; } }
         }
 
         private static bool Heal<T>(StrategyResult sr, BattleCase2<T> battleCase, ref int points, PossibleMove currentLocation, ref bool hasRation) where T : Warrior2
@@ -475,57 +479,62 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         private static void CalculateEnemyResponse<T>(StrategyResult sr, BattleCase2<T> battleCase, PossibleMove currentLocation, TrooperStance currentPosition) where T : Warrior2
         {
-            if (sr.Change.EnemyLost == 0)
+            var allEnemies = battleCase.OtherEnemies.ToList();
+            if (sr.Change.EnemyLost == 0) allEnemies = allEnemies.Concat(new List<T> {battleCase.Enemy}).ToList();
+            var alliesAndSelf = battleCase.Allies.Select(s => new PositionedWarrior { Location = s.Location, Warrior = s, Hitpoints = s.Hitpoints, Position = s.Position })
+                .Concat(new List<PositionedWarrior> { new PositionedWarrior { Warrior = battleCase.Self, Location = currentLocation, Hitpoints = battleCase.Self.Hitpoints - sr.Change.OurDamage, Position = currentPosition } }).ToList();
+            foreach (var enemy in allEnemies)
             {
-                var allEnemies = battleCase.OtherEnemies.Concat(new List<T> {battleCase.Enemy});
-                var alliesAndSelf = battleCase.Allies.Select(s => new PositionedWarrior { Location = s.Location, Warrior = s, Alive = true, Position = s.Position })
-                    .Concat(new List<PositionedWarrior> { new PositionedWarrior { Warrior = battleCase.Self, Location = currentLocation, Alive = true, Position = currentPosition } });
-                foreach (var enemy in allEnemies)
+                if (!alliesAndSelf.Any(a => a.Alive)) break;
+                alliesAndSelf.ForEach(a => a.Temp = 0);
+                var enemyGrenadeRadius = Tool.GetRadius(enemy.GrenadeRange);
+                var attackable = alliesAndSelf.Where(a => a.Alive).Where(a => enemyGrenadeRadius.Contains(Math.Abs(a.Location.X - enemy.Location.X), Math.Abs(a.Location.Y - enemy.Location.Y)));
+                var grenadeDamage = 0;
+                var origOurDamage = sr.Change.OurDamage;
+                if (enemy.HasGrenade && attackable.Count() > 0 && sr.Change.OurLost == 0)
                 {
-                    if (!alliesAndSelf.Where(a => a.Alive).Any()) break;
-                    var enemyGrenadeRadius = Tool.GetRadius(enemy.GrenadeRange + 1);
-                    var attackable = alliesAndSelf.Where(a => a.Alive).Where(a => enemyGrenadeRadius.Contains(Math.Abs(a.Location.X - enemy.Location.X), Math.Abs(a.Location.Y - enemy.Location.Y)));
-                    var grenadeDamage = 0;
-                    var origOurDamage = sr.Change.OurDamage;
-                    if (enemy.HasGrenade && attackable.Count() > 0 && sr.Change.OurLost == 0)
+                    foreach (var attacked in attackable)
                     {
-                        foreach (var attacked in attackable)
-                        {
-                            var damage = enemy.GetGrenadeDamage(1);
-                            grenadeDamage += damage;
-                            sr.Change.OurDamage += damage;
-                            if (damage >= attacked.Warrior.Hitpoints)
-                            {
-                                sr.Change.OurLost += 1;
-                                attacked.Alive = false;
-                            }
-                        }
-                    }
-                    if (grenadeDamage == 0 || sr.Change.OurLost == 0)
-                    {
-                        sr.Change.OurDamage -= grenadeDamage;
-                        var stepsToAttack = alliesAndSelf.Where(a=>a.Alive).Select(a => Math.Abs(battleCase.Self.Location.CloserLevelWhere(b => b.CanBeAttacked) - a.Location.Step)).Min();
-                        if (stepsToAttack < 0) stepsToAttack = 0;
-                        var toAttack = alliesAndSelf.Where(a => a.Alive).Where(a => Math.Abs(battleCase.Self.Location.CloserLevelWhere(b => b.CanBeAttacked) - a.Location.Step) == stepsToAttack).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
-                        var enemyPoints = enemy.Actions - enemy.Cost(ActionType.Move) * stepsToAttack;
-                        if (enemy.HasFieldRation) enemyPoints += enemy.FieldRationExtraPoints;
-                        if (toAttack != null && stepsToAttack < MyStrategy.MaxStepsEnemyWillDo)
-                        {
-                            while (enemy.DoIfCan(ActionType.Shoot, ref enemyPoints))
-                                sr.Change.OurDamage += (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position + 1) * MyStrategy.NotStandingDamageCoeff));
-                            if (sr.Change.OurDamage >= toAttack.Warrior.Hitpoints)
-                            {
-                                sr.Change.OurLost += 1;
-                                toAttack.Alive = false;
-                            }
-                        }
-                    }
-                    if (sr.Change.OurLost == 0 && sr.Change.OurDamage < origOurDamage + grenadeDamage)
-                    {
-                        sr.Change.OurDamage = origOurDamage + grenadeDamage;
+                        var damage = enemy.GetGrenadeDamage(0);
+                        attacked.Temp += damage;
+                        grenadeDamage += damage;
+                        sr.Change.OurDamage += damage;
                     }
                 }
-            }           
+                if (alliesAndSelf.Any(a => !a.TempAlive))
+                {
+                    alliesAndSelf.ForEach(a =>
+                    {
+                        a.Hitpoints -= a.Temp;
+                    });
+                }
+                else
+                {
+                    sr.Change.OurDamage -= grenadeDamage;
+
+                    var toAttack = alliesAndSelf.Where(a => a.Alive).OrderBy(a => WalkableMap.Instance().FindDistance(a.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked) > -1).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
+                    if (toAttack != null)
+                    {
+                        var stepsToAttack = WalkableMap.Instance().FindDistance(toAttack.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked);
+                        if (toAttack.Warrior.VisionRange > enemy.VisionRange)
+                            stepsToAttack++;
+
+                        var enemyPoints = enemy.Actions - enemy.Cost(ActionType.Move) * stepsToAttack;
+                        if (enemy.HasFieldRation) enemyPoints += enemy.FieldRationExtraPoints;
+                        while (enemy.DoIfCan(ActionType.Shoot, ref enemyPoints))
+                        {
+                            var dmg = (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position + 1) * MyStrategy.NotStandingDamageCoeff));
+                            sr.Change.OurDamage += dmg;
+                            toAttack.Hitpoints -= dmg;
+                        }
+                    }
+                }
+                if (alliesAndSelf.All(a => a.Alive) && sr.Change.OurDamage < origOurDamage + grenadeDamage)
+                {
+                    sr.Change.OurDamage = origOurDamage + grenadeDamage;
+                }
+            }
+            sr.Change.OurLost += alliesAndSelf.Count(a => !a.Alive);
         }
 
         private static bool CheckStanceBeforeMoving<T>(StrategyResult sr, BattleCase2<T> battleCase, ref int points, PossibleMove currentLocation, ref TrooperStance currentPosition) where T: Warrior2
@@ -598,27 +607,32 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return false;
         }
 
-        private static bool Move<T>(StrategyResult sr, List<PossibleMove> way, int distance, BattleCase2<T> battleCase, ref int points, ref PossibleMove location, ref TrooperStance position) where T : Warrior2
+        private static bool Move<T>(StrategyResult sr, List<PossibleMove> way, int distance, BattleCase2<T> battleCase, ref int points, ref PossibleMove location, ref TrooperStance position, ref bool hasRation) where T : Warrior2
         {
             if (!CheckStanceBeforeMoving(sr, battleCase, ref points, location, ref position)) return false;
-            if (!battleCase.Self.DoIfCan(ActionType.Move, distance, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance));
             var oldLoc = location;
             var point = oldLoc;
             for (var wayIdx = 1; wayIdx <= distance; wayIdx++)
             {
+                ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
+                if (!battleCase.Self.DoIfCan(ActionType.Move, 1, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance)); 
                 sr.Moves.Add(new Move().Move(point.DirectionTo(way[wayIdx])));
                 point = way[wayIdx];
             }
             if (point.CloserToEnemy)
             {
                 if (battleCase.Self.HasGrenade) sr.Change.PotentiallyThrowGrenade++;
-                //sr.Change.PotentiallyHelpToAttack++;
+                sr.Change.PotentiallyHelpToAttack++;
             }
             if (point.DistanceToTeam != oldLoc.DistanceToTeam)
             {
                 var change = Math.Max(0, Math.Abs(point.DistanceToTeam - oldLoc.DistanceToTeam) - MyStrategy.MinDistanceToTeamInBattle);
                 if (change > 0)
                     sr.Change.PotentiallyIncreasePower += (point.DistanceToTeam > oldLoc.DistanceToTeam ? -change : change);
+                if (sr.Change.PotentiallyIncreasePower < 0)
+                {
+                    //return sr.SetImpossible("Too far from the team");
+                }
             }
             if (point.CanAttackFromHere && !oldLoc.CanAttackFromHere)
             {

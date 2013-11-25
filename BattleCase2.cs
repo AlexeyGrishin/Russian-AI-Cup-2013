@@ -120,11 +120,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             });
             self.Location.ForEach(processCell);
             Allies.Select(a => a.Location).ToList().ForEach(processCell);
+            /*
             WaysToEnemy = new List<IEnumerable<PossibleMove>>(5);
             self.Location.WhereLeafs(a => a.CloserToEnemy).ToList().ForEach(a =>
             {
                 WaysToEnemy.Add(a.PathToThis());
-            });
+            });*/
+            WaysToEnemy = new List<IEnumerable<PossibleMove>> { WalkableMap.Instance().FindWay(self.Location, Enemy.Location) };
             WaysFromEnemy = new List<IEnumerable<PossibleMove>>(5);
             self.Location.Where(a => !a.CanBeAttacked && a.FurtherMoves.Count == 0).ToList().ForEach(a =>
             {

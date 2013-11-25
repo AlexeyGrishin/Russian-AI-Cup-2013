@@ -22,7 +22,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             if (follow == null)
             {
-                follow = new FollowPoint(self.Ext(), MyStrategy.BackDistance, WalkableMap.Instance());
+                follow = new FollowPoint(self.Ext(), MyStrategy.BackDistance, WalkableMap.Instance(), MyStrategy.CloseDistance);
             }
             follow.SuggestMove(self.Ext(), world.Troopers.Where(t => t.IsTeammate).Select(t => t.Ext()), move);
         }
