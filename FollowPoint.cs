@@ -71,14 +71,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var distanceToTarget = Tool.GetDistance(self.Location, CheckPoint);
                 if (distanceToTarget <= closeDistance)
                 {
-                    Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");
+                    Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");//[DEBUG]
                     GoNext();
                 }
                 var stepsLeft = self.Actions / self.Cost(ActionType.Move);
                 var possibleEnemyAt = (int)(1 + globalMaxVis - self.VisionRange);
                 if (stepsLeft <= possibleEnemyAt)
                 {
-                    Console.WriteLine("There could be enemy in " + possibleEnemyAt + "steps, so I stop");
+                    Console.WriteLine("There could be enemy in " + possibleEnemyAt + "steps, so I stop");//[DEBUG]
                     move.Wait();
                     return;
                 }
@@ -87,12 +87,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 {
                     var lostOne = all.First(t => Tool.GetDistance(t, self) == distance);
                     way = map.FindWay(self.Location, lostOne.Location).ToList();
-                    Console.WriteLine("Eyes[" + self.Type + "] goes to lost one");
+                    Console.WriteLine("Eyes[" + self.Type + "] goes to lost one");  //[DEBUG]
                 }
                 else
                 {
                     way = map.FindWay(self.Location, CheckPoint).ToList();
-                    Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");
+                    Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");//[DEBUG]
+                    Console.WriteLine(String.Join("," ,way.Select(w => "[" + w.X + ", " + w.Y + "]")));
                 }
             }
             else
@@ -100,13 +101,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if (eyesStuck)
                 {
                     way = map.FindWay(self.Location, CheckPoint).ToList();
-                    Console.WriteLine("Unit[" + self.Type + "] goes to checkpoint because eyes are blocked");
+                    Console.WriteLine("Unit[" + self.Type + "] goes to checkpoint because eyes are blocked");//[DEBUG]
 
                 }
                 else
                 {
-                    way = map.FindWay(self.Location, all.First(t => IsEyes(t)).Location).ToList();
-                    Console.WriteLine("Unit[" + self.Type + "] follows");
+                    way = map.FindWay(self.Location, all.First(t => IsEyes(t)).Location, MyStrategy.TeamCloseDistance).ToList();
+                    Console.WriteLine("Unit[" + self.Type + "] follows");//[DEBUG]
                 }
             }
             if (way.Count() > 1)

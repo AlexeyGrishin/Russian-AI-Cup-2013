@@ -36,11 +36,11 @@ namespace Tests.AI
             var medicPoint = maze.Trooper(TrooperType.FieldMedic);
             var MA = WalkableMap.Create(maze);
             if (commanderPoint != null)
-                commander = new Warrior2Mock { AType = TrooperType.Commander, AVisionRange = 8, ALocation = MA.Get(commanderPoint) };
+                commander = new Warrior2Mock { AActions = 10, AType = TrooperType.Commander, AVisionRange = 8, ALocation = MA.Get(commanderPoint) };
             if (soldierPoint != null)
-                soldier = new Warrior2Mock { AType = TrooperType.Soldier, AVisionRange = 7, ALocation = MA.Get(soldierPoint) };
+                soldier = new Warrior2Mock { AActions = 10, AType = TrooperType.Soldier, AVisionRange = 7, ALocation = MA.Get(soldierPoint) };
             if (medicPoint != null)
-                medic = new Warrior2Mock { AType = TrooperType.FieldMedic, AVisionRange = 7, ALocation = MA.Get(medicPoint) };
+                medic = new Warrior2Mock { AActions = 10, AType = TrooperType.FieldMedic, AVisionRange = 7, ALocation = MA.Get(medicPoint) };
             all = (new List<Warrior2> { medic, soldier, commander }).Where(w => w != null).ToList();
             walker = new FollowPoint(all.First(), backDistance, MA);
         }

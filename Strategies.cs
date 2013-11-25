@@ -189,7 +189,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "line down and shoot", ActionDraft.LieDown, ActionDraft.Shoot);
             }
             Add(list, "come and shoot",             ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.Shoot);
-            Add(list, "step away and shoot",        ActionDraft.StepFromEnemy, 1, 1, ActionDraft.Shoot);
+            if (battleCase.Self.Type == TrooperType.Sniper)
+            {
+                Add(list, "come and kneel", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.OnKneel);   //for sniper
+                Add(list, "come and lie down", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.LieDown);   //for sniper
+            }
+            Add(list, "step away and shoot", ActionDraft.StepFromEnemy, 1, 1, ActionDraft.Shoot);
             if (battleCase.Self.HasGrenade)
             {
                 Add(list, "come and throw grenade", ActionDraft.StepToEnemy, 0, 3, ActionDraft.ThrowGrenade);
@@ -434,7 +439,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     sr.Moves.RemoveAll(s => s.Action == ActionType.EatFieldRation);
                 }
             }
-            sr.Change.LostMobility += (TrooperStance.Standing - currentPosition);
+            if (battleCase.Self.Type != TrooperType.Sniper)
+                sr.Change.LostMobility += (TrooperStance.Standing - currentPosition);
+            else if (currentLocation.CanAttackFromHere)
+                sr.Change.PotentiallyHelpToAttack += (TrooperStance.Standing - currentPosition);
             CalculateEnemyResponse(sr, battleCase, currentLocation, currentPosition);
             return sr;
         }
@@ -521,6 +529,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
                         var enemyPoints = enemy.Actions - enemy.Cost(ActionType.Move) * stepsToAttack;
                         if (enemy.HasFieldRation) enemyPoints += enemy.FieldRationExtraPoints;
+                        if (enemy.Type == TrooperType.Sniper && stepsToAttack > 0) enemyPoints = 0;
                         while (enemy.DoIfCan(ActionType.Shoot, ref enemyPoints))
                         {
                             var dmg = (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position + 1) * MyStrategy.NotStandingDamageCoeff));

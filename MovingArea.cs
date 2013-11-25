@@ -215,11 +215,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return target == null ? new List<PossibleMove>() : FindWay(from, target);
         }
 
-        public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to)
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to, int closeDistance = 0)
         {
-            return FindWay(from, to.Point);
+            return FindWay(from, to.Point, closeDistance);
         }
-        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to)
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to, int closeDistance = 0)
         {
             if (from.Step != 0) throw new Exception("Call BuildMapFrom first for this point");
             var minKnownDistance = Math.Abs(from.X - to.X) + Math.Abs(from.Y - to.Y);
@@ -228,7 +228,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 a.DistanceToTarget = Math.Abs(a.X - to.X) + Math.Abs(a.Y - to.Y);
                 if (a.DistanceToTarget < minKnownDistance) minKnownDistance = a.DistanceToTarget;
             });
-            return from.Where(a => a.DistanceToTarget == minKnownDistance).Select(a => a.PathToThis()).OrderBy(a => a.Count()).FirstOrDefault().ToList();
+            return from.Where(a => a.DistanceToTarget <= Math.Max(closeDistance, minKnownDistance)).Select(a => new {Path = a.PathToThis(), Distance = a.DistanceToTarget})
+                .OrderBy(a => a.Path.Count() + a.Distance*2).Select(a => a.Path).FirstOrDefault().ToList();
         }
 
         private IList<PossibleMove> BuildStep(IList<PossibleMove> previousSteps, int step, Func<PossibleMove, bool> exclude)

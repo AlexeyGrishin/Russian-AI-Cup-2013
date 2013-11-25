@@ -221,7 +221,7 @@ namespace Tests.AI
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(6, 0);
             var self = new Warrior2Mock { AActions = 4, ADamage = 25, AHitpoints = 100, AAttackRange = 6, ALocation = selfLoc, AHasRation = true, ShootCost = 2 };
-            var enemy = new Warrior2Mock { AActions = 8, ADamage = 15, AHitpoints = 101, AAttackRange = 6, ALocation = enemyLoc };
+            var enemy = new Warrior2Mock { AActions = 8, ADamage = 15, AHitpoints = 100, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
             CollectionAssert.AreEqual(new List<ActionType> { ActionType.EatFieldRation, ActionType.LowerStance, ActionType.Shoot, ActionType.Shoot}, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
@@ -267,7 +267,7 @@ namespace Tests.AI
             var enemy = new Warrior2Mock { AActions = 6, ADamage = 4, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
-            CollectionAssert.AreEqual(new List<ActionType> { ActionType.RaiseStance, ActionType.RaiseStance, ActionType.Move, ActionType.Shoot }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.RaiseStance, ActionType.RaiseStance, ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
 
         }
 

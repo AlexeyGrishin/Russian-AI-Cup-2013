@@ -17,9 +17,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int NeedHeeling = 60;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
-        public static double OurEnemyDamageCoeff = 0.6;//TODO: tet with 2
+        public static double OurEnemyDamageCoeff = 1.2;
         public static int BackDistance = 6;
         public static int CloseDistance = 3;
+        public static int TeamCloseDistance = 2;
         public static int MinDistanceToTeamInBattle = 3;
         public static int MaxStepsEnemyWillDo = 2;
         public static double NotStandingDamageCoeff = 0.5;

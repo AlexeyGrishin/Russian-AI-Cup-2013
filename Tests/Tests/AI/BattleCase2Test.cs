@@ -74,6 +74,9 @@ namespace Tests.AI
             }, way.ToList());
         }
 
+
+
+
         [TestMethod]
         public void TestFindWay_Exclude()
         {
@@ -95,6 +98,29 @@ namespace Tests.AI
                 MA.Get(3, 0), MA.Get(4, 0), MA.Get(5, 0), MA.Get(6, 0), MA.Get(6, 1), MA.Get(6, 2), MA.Get(6, 3), MA.Get(6, 4), MA.Get(5, 4), MA.Get(4, 4), MA.Get(3, 4), MA.Get(3, 3),
             }, way.ToList());
         }
+
+        [TestMethod]
+        public void TestFindWay_Close()
+        {
+            var map = new string[] {
+                "       ",
+                " xxxxx ",
+                " 5    c",
+                "xxxxxxx",
+                "       "
+            };
+            var maze = new MockMaze<Warrior2Mock>(map);
+            var MA = WalkableMap.Create(maze);
+            var self = MockTool.FindChar(map, 'c');
+            var target = MockTool.FindChar(map, '5').To(Direction.West);
+            var selfLoc = MA.BuildMapFrom(self, 11, p => !maze.HasNotWallOrUnit(p.X, p.Y));
+            var way = MA.FindWay(selfLoc, MA.Get(target.X, target.Y), 2);
+            Console.WriteLine(String.Join(" --> ", way.Select(c => c.ToString())));
+            CollectionAssert.AreEqual(new List<PossibleMove> {
+                MA.Get(6, 2), MA.Get(5, 2), MA.Get(4, 2), MA.Get(3, 2), MA.Get(2, 2),
+            }, way.ToList());
+        }
+
 
         [TestMethod]
         public void Test_Attackable()
