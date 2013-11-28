@@ -24,11 +24,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var center = Point.Get(map.Width >> 1, map.Height >> 1);
             var nearestCorner = corners.Select(c => new { Point = c, Distance = Tool.GetDistance(self.Location, c) }).OrderBy(d => d.Distance).First().Point;
             var oppositeCorner = corners.Select(c => new { Point = c, Distance = Tool.GetDistance(self.Location, c) }).OrderBy(d => d.Distance).Last().Point;
+            var otherCorners = corners.Where(c => c != nearestCorner && c != oppositeCorner);
+            var oneOfCorners = otherCorners.OrderBy(c => walkableMap.FindWay(self.Location, c).Count()).First();
+            var wayToIt = walkableMap.FindWay(self.Location, oneOfCorners);
+            var middleOfWall = wayToIt.ElementAt(wayToIt.Count() / 2);
+            var middleWayToCenter = Point.Get((middleOfWall.X + center.X)/2, (middleOfWall.Y + center.Y)/2);
             checkPoints = new List<Point>(5);
             checkPoints.Add(nearestCorner);
+            checkPoints.Add(middleOfWall.Point);
+            checkPoints.Add(center);
+            checkPoints.Add(oneOfCorners);
             checkPoints.Add(oppositeCorner);
             checkPoints.Add(center);
-            checkPoints.AddRange(corners.Where(c => c != nearestCorner && c != oppositeCorner));
+            checkPoints.AddRange(otherCorners);
         }
 
         private List<Point> checkPoints;
@@ -61,6 +69,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         }
 
         private bool eyesStuck = false;
+        private Point nextEyesPoint = Point.Get(-1, -1);
 
         public void SuggestMove(Warrior2 self, IEnumerable<Warrior2> all, Move move, bool secondAttempt = false)
         {
@@ -112,7 +121,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
             if (way.Count() > 1)
             {
-                if (IsEyes(self)) eyesStuck = false;
+                if (IsEyes(self))
+                {
+                    eyesStuck = false;
+                    nextEyesPoint = way.Count() > 2 ? way[2].Point : Point.Get(-1, -1);
+                }
+                else
+                {
+                    if (nextEyesPoint.Equals(way[1]))
+                    {
+                        Console.WriteLine("Unit[" + self.Type + "] does not want to step before eyes");
+                        move.Wait();
+                        return;
+                    }
+                }
                 var dir = self.Location.DirectionTo(way[1]);
                 move.Move(dir);
             }

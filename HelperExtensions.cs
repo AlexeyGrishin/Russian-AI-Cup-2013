@@ -147,6 +147,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             {
                 return world.IsVisible(100, xFrom, yFrom, attacker.orig.Stance, xTo, yTo, attackWho.orig.Stance);
             }
+
+
+            public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
+            {
+                return world.IsVisible(100, xFrom, yFrom, stance, xTo, yTo, stance);
+            }
         }
 
         public static string AsString(this Move move)

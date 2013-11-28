@@ -215,13 +215,23 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return target == null ? new List<PossibleMove>() : FindWay(from, target);
         }
 
-        public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to, int closeDistance = 0)
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to, Func<PossibleMove, bool> through)
         {
-            return FindWay(from, to.Point, closeDistance);
+            var way1 = FindWay(from, through).ToList();
+            var lastPoint = way1.LastOrDefault() ?? from;
+            var eraseFrom = lastPoint.Step;
+            var way2 = FindWay(lastPoint, to, continueWay: true).Skip(eraseFrom);
+            if (way1.Count > 0) way1.RemoveAt(way1.Count - 1);
+            return way1.Concat(way2);
         }
-        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to, int closeDistance = 0)
+
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, PossibleMove to, int closeDistance = 0, bool continueWay = false)
         {
-            if (from.Step != 0) throw new Exception("Call BuildMapFrom first for this point");
+            return FindWay(from, to.Point, closeDistance, continueWay);
+        }
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to, int closeDistance = 0, bool continueWay = false)
+        {
+            if (from.Step < 0 || (from.Step != 0 && !continueWay)) throw new Exception("Call BuildMapFrom first for this point");
             var minKnownDistance = Math.Abs(from.X - to.X) + Math.Abs(from.Y - to.Y);
             from.ForEach(a =>
             {

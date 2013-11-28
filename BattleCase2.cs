@@ -93,6 +93,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
     public interface IWarriorMaze<T> : IMaze where T : Positioned2
     {
         bool CanAttack(T attacker, int xFrom, int yFrom, T attackWho, int xTo, int yTo);
+        bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo);
     }
 
     public class BattleCase2<T> where T : Positioned2
@@ -101,6 +102,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             Self = self;
             Enemy = enemy;
+            this.maze = maze;
             Allies = allies == null ? new List<T>() : allies.ToList();
             OtherEnemies = enemies == null ? new List<T>() : enemies.ToList();
             var currentDistance = Math.Abs(self.Location.X - enemy.Location.X) + Math.Abs(self.Location.Y - enemy.Location.Y);
@@ -126,7 +128,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             {
                 WaysToEnemy.Add(a.PathToThis());
             });*/
-            WaysToEnemy = new List<IEnumerable<PossibleMove>> { WalkableMap.Instance().FindWay(self.Location, Enemy.Location) };
+            WaysToEnemy = new List<IEnumerable<PossibleMove>> { WalkableMap.Instance().FindWay(self.Location, Enemy.Location, (m) => m.CanAttackFromHere) };
             WaysFromEnemy = new List<IEnumerable<PossibleMove>>(5);
             self.Location.Where(a => !a.CanBeAttacked && a.FurtherMoves.Count == 0).ToList().ForEach(a =>
             {
@@ -134,13 +136,21 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             });
             StepsToAttack = self.Location.CloserLevelWhere(a => a.CanAttackFromHere);
             StepsToBeAttacked = self.Location.CloserLevelWhere(a => a.CanBeAttacked);
-            SickAlly = Allies.Where(a => a.IsSick).FirstOrDefault();
+            SickAlly = Allies.Where(a => a.IsSick).OrderBy(a => a.Location.DistanceTo(self.Location)).FirstOrDefault();
             if (SickAlly == null)
                 WayToSickAlly = new List<PossibleMove>();
             else
                 WayToSickAlly = WalkableMap.Instance().FindWay(self.Location, SickAlly.Location).ToList();
             //if (WayToSickAlly.Count > 1) WayToSickAlly.RemoveAt(WayToSickAlly.Count - 1);
         }
+
+        private IWarriorMaze<T> maze;
+
+        public bool CanAttack(Point from, Point to, TrooperStance position)
+        {
+            return maze.CanAttack(from.X, from.Y, position, to.X, to.Y);
+        }
+
 
         public IList<T> AllEnemies { get { return OtherEnemies.Concat(new List<T> { Enemy }).ToList(); } }
         public IList<T> AllOurTroops { get { return Allies.Concat(new List<T> { Self }).ToList(); } }

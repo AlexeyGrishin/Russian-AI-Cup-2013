@@ -50,9 +50,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             var enemies = world.Troopers.Where(t => !t.IsTeammate);
             self.Ext().CheckAttackList(enemies.Concat(oldEnemies).Select(e => e.GetPosition()));
             foreach (var enemy in enemies) enemy.Ext().Noticed = false;
-            enemies = enemies.Concat(oldEnemies).OrderBy(e => e.Hitpoints);
             Console.WriteLine("Visible enemies are: " + String.Join(",", enemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
             Console.WriteLine("Old known enemies are: " + String.Join(",", oldEnemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
+            enemies = enemies.Concat(oldEnemies).OrderBy(e => e.Hitpoints);
             if (!self.Ext().HasNextMove())
             {
                 var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id);

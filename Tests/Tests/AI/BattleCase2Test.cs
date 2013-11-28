@@ -153,6 +153,62 @@ namespace Tests.AI
         }
 
         [TestMethod]
+        public void TestBattleCase_SickAlly()
+        {
+            var map = new string[] {
+                "r    ",
+                "m   c ",
+                "      ",
+                "!     "
+            };
+            var maze = new MockMaze<Warrior2Mock>(map);
+            var MA = WalkableMap.Create(maze);
+            var commanderPoint = maze.Trooper(TrooperType.Commander);
+            var medicPoint = maze.Trooper(TrooperType.FieldMedic);
+            var sniperPoint = maze.Trooper(TrooperType.Sniper);
+            var medic = new Warrior2Mock { AHitpoints = 100, AType = TrooperType.FieldMedic, AIsMedic = true, ALocation = MA.BuildMapFrom(medicPoint, 100, (m) => !maze.HasNotWallOrUnit(m.X, m.Y)) };
+            var commander = new Warrior2Mock { AHitpoints = 60, ALocation = MA.Get(commanderPoint), AType = TrooperType.Commander };
+            var sniper = new Warrior2Mock {AHitpoints = 55, ALocation = MA.Get(sniperPoint), AType = TrooperType.Sniper};
+
+            var battle = new BattleCase2<Warrior2Mock>(medic, new Warrior2Mock {AType = TrooperType.Commander, ALocation = MA.Get(maze.Point), AHitpoints = 111},  maze, new List<Warrior2Mock> {commander, sniper});
+            Assert.AreEqual(sniper.Type, battle.SickAlly.Type);
+
+        }
+
+        [TestMethod]
+        public void TestBattleCase_WayToEnemy()
+        {
+            var map = new string[] {
+                "!          ",
+                "           ",
+                "           ",
+                "           ",
+                "           ",
+                "           ",
+                "   m        "
+            };
+            var maze = new MockMaze<Warrior2Mock>(map);
+            var MA = WalkableMap.Create(maze);
+            var medicPoint = maze.Trooper(TrooperType.FieldMedic);
+            var enemyPoint = maze.Point;
+            var medic = new Warrior2Mock { AHitpoints = 100, AVisionRange = 5, AAttackRange = 5, ALocation = MA.BuildMapFrom(medicPoint, 100) };
+            var enemy = new Warrior2Mock { AHitpoints = 100, AVisionRange = 5, AAttackRange = 5, ALocation = MA.Get(enemyPoint) };
+            var battle = new BattleCase2<Warrior2Mock>(medic, enemy, maze);
+            var wayToEnemy = battle.WaysToEnemy.First();
+            Console.WriteLine(String.Join(" -> ", wayToEnemy.Select(w => w.X + "," + w.Y)));
+            CollectionAssert.AreEqual(new List<PossibleMove>
+            {
+                MA.Get(3, 6),
+                MA.Get(3, 5),
+                MA.Get(3, 4),
+                MA.Get(3, 3),
+                MA.Get(3, 2),
+                MA.Get(3, 1),
+                MA.Get(3, 0),
+            }, wayToEnemy.ToList());
+        }
+
+        [TestMethod]
         public void TestBattleCase()
         {
             var map = new string[] {

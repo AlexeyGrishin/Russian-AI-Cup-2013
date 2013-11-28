@@ -94,7 +94,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int FieldRationExtraPoints
         {
-            get { return Game.FieldRationBonusActionPoints - Game.FieldRationBonusActionPoints; }
+            get { return Game.FieldRationBonusActionPoints - Game.FieldRationEatCost;}
         }
 
         public override int Hitpoints

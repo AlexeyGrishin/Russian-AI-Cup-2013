@@ -103,6 +103,12 @@ namespace Tests.AI
             get { return text.Length; }
         }
 
+
+
+        public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
+        {
+            return true;
+        }
     }
 
     public class Warrior2Mock : Warrior2

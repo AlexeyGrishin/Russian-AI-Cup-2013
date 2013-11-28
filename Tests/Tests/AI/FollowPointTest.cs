@@ -28,7 +28,7 @@ namespace Tests.AI
             move = new Move();
         }
 
-        private void Init(string[] map, int backDistance = 5)
+        private void Init(string[] map, int backDistance = 5, Action<WalkableMap, Point, Point, Point> action = null)
         {
             maze = new MockMaze<Warrior2>(map);
             var soldierPoint = maze.Trooper(TrooperType.Soldier);
@@ -41,7 +41,9 @@ namespace Tests.AI
                 soldier = new Warrior2Mock { AActions = 10, AType = TrooperType.Soldier, AVisionRange = 7, ALocation = MA.Get(soldierPoint) };
             if (medicPoint != null)
                 medic = new Warrior2Mock { AActions = 10, AType = TrooperType.FieldMedic, AVisionRange = 7, ALocation = MA.Get(medicPoint) };
-            all = (new List<Warrior2> { medic, soldier, commander }).Where(w => w != null).ToList();
+
+            all = (new List<Warrior2> { commander, medic, soldier }).Where(w => w != null).ToList();
+            if (action != null) action(MA, commanderPoint, soldierPoint, medicPoint);
             walker = new FollowPoint(all.First(), backDistance, MA);
         }
         
@@ -84,11 +86,25 @@ namespace Tests.AI
         public void MainSuccessScenario()
         {
             Init(new string[] {
-                "cms     ",
-                "        ",
-                "        "
-            }, 4);
+                "cms         ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            ",
+                "            "
+            }, 4, (map, c,s,m) => map.BuildMapFrom(c, 20));
+
             SuggestMove(commander);
+            //TODO: fix tests later
             AssertMove(commander, Direction.South);
             SuggestMove(commander);
             AssertMove(commander, Direction.East);

@@ -381,6 +381,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     var pointsAfterRepeatedAction = (actions.IndexOf(action) == actions.Count - 1) ? 0 : actions.GetRange(actions.IndexOf(action) + 1, actions.Count - actions.IndexOf(action) - 1).Select(n => battleCase.Self.Cost(n)).Sum();
                     points -= pointsAfterRepeatedAction;
                     if (points <= 0) return sr.Impossible(String.Format("Not enogh points to shoot at least once"));
+                    if (!battleCase.CanAttack(currentLocation.Point, battleCase.Enemy.Location.Point, currentPosition)) return sr.Impossible(String.Format("Cannot shoot from poition {0}", currentPosition));
                     while (Shoot(sr, battleCase.Self, battleCase.Enemy, ref points, currentPosition, currentLocation)) {
                         ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
                     };
@@ -440,9 +441,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 }
             }
             if (battleCase.Self.Type != TrooperType.Sniper)
+            {
                 sr.Change.LostMobility += (TrooperStance.Standing - currentPosition);
+            }
             else if (currentLocation.CanAttackFromHere)
+            {
+                var stillCanAttack = battleCase.CanAttack(currentLocation.Point, battleCase.Enemy.Location.Point, currentPosition);
+                if (!stillCanAttack)
+                    return sr.Impossible("Sniper cannot attack enemy next step from position " + currentPosition);
                 sr.Change.PotentiallyHelpToAttack += (TrooperStance.Standing - currentPosition);
+            }
             CalculateEnemyResponse(sr, battleCase, currentLocation, currentPosition);
             return sr;
         }
@@ -454,6 +462,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 {
                     sr.Moves.Add(new Move { Action = ActionType.EatFieldRation, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y  });
                     points += battleCase.Self.FieldRationExtraPoints;
+                    if (points > battleCase.Self.MaxActions) points = battleCase.Self.MaxActions;
                     hasRation = false;
                 }
 
@@ -520,7 +529,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 {
                     sr.Change.OurDamage -= grenadeDamage;
 
-                    var toAttack = alliesAndSelf.Where(a => a.Alive).OrderBy(a => WalkableMap.Instance().FindDistance(a.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked) > -1).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
+                    var toAttack = alliesAndSelf.Where(a => a.Alive).OrderBy(a => 
+                    {
+                        var dist = WalkableMap.Instance().FindDistance(a.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked);
+                        if (dist == -1) return 1000;
+                        return dist * 100 + a.Warrior.Hitpoints;
+                    }).FirstOrDefault();
                     if (toAttack != null)
                     {
                         var stepsToAttack = WalkableMap.Instance().FindDistance(toAttack.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked);
@@ -532,7 +546,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                         if (enemy.Type == TrooperType.Sniper && stepsToAttack > 0) enemyPoints = 0;
                         while (enemy.DoIfCan(ActionType.Shoot, ref enemyPoints))
                         {
-                            var dmg = (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position + 1) * MyStrategy.NotStandingDamageCoeff));
+                            var dmg = (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position) * MyStrategy.NotStandingDamageCoeff));
                             sr.Change.OurDamage += dmg;
                             toAttack.Hitpoints -= dmg;
                         }

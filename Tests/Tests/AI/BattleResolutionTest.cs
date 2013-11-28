@@ -43,6 +43,12 @@ namespace Tests.AI
             {
                 return true;
             }
+
+
+            public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
+            {
+                return true;
+            }
         }
 
         [TestMethod]
@@ -267,7 +273,7 @@ namespace Tests.AI
             var enemy = new Warrior2Mock { AActions = 6, ADamage = 4, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc };
             var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { });
             var resolution = Battle.All(battle);
-            CollectionAssert.AreEqual(new List<ActionType> { ActionType.RaiseStance, ActionType.RaiseStance, ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.RaiseStance, ActionType.RaiseStance, ActionType.Move, ActionType.Shoot }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
 
         }
 
