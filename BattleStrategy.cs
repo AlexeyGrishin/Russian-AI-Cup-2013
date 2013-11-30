@@ -16,7 +16,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public bool IsInDanger(Trooper self, World world)
         {
             var visibleEnemies = world.Troopers.Where(t => !t.IsTeammate);
-            if (MyStrategy.Turn - oldEnemiesTurn > 10)
+            if (MyStrategy.Turn - oldEnemiesTurn > 5)
             {
                 oldEnemies.Clear();
             }
@@ -24,7 +24,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 oldEnemies = oldEnemies.Where(oe => !visibleEnemies.Any(ve => ve.Id == oe.Id)).ToList();
                 foreach (var oldEnemy in oldEnemies.ToList())
                 {
-                    var shallBeVisible = world.Troopers.Where(t => t.IsTeammate).Any(t => t.GetDistanceTo(oldEnemy) <= t.VisionRange);
+                    var shallBeVisible = world.Troopers.Where(t => t.IsTeammate).Any(t => world.IsVisible(t.VisionRange, t.X, t.Y, t.Stance, oldEnemy.X, oldEnemy.Y, oldEnemy.Stance));
                     if (shallBeVisible)
                     {
                         Console.WriteLine("Seems like old enemy " + oldEnemy.Type + " gone away");  //[DEBUG]
@@ -45,6 +45,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return visibleEnemies.Count() + oldEnemies.Count > 0;
         }
 
+        private static int howManySeenBefore = -1;
+
         public void DoMove(Trooper self, World world, Move move)
         {
             var enemies = world.Troopers.Where(t => !t.IsTeammate);
@@ -52,7 +54,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             foreach (var enemy in enemies) enemy.Ext().Noticed = false;
             Console.WriteLine("Visible enemies are: " + String.Join(",", enemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
             Console.WriteLine("Old known enemies are: " + String.Join(",", oldEnemies.Select(e => e.Type + "(" + e.X + "," + e.Y + ")")));  //[DEBUG]
+            if (enemies.Count() + oldEnemies.Count() != howManySeenBefore)
+            {
+                self.Ext().NextMoves.Clear();
+                Console.WriteLine("Reset battle plan - we have new guys visible"); //[DEBUG]
+            }
             enemies = enemies.Concat(oldEnemies).OrderBy(e => e.Hitpoints);
+            howManySeenBefore = enemies.Count();
             if (!self.Ext().HasNextMove())
             {
                 var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id);

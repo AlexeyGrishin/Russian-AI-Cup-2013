@@ -114,12 +114,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
 
 
-        public class WorldMaze: IMaze, IWalkingMaze, IWarriorMaze<TrooperExt>
+        public class WorldMaze: IMaze, IWarriorMaze<TrooperExt>
         {
             public World world;
+            private DangerMap dangerMap;
             public WorldMaze(World world)
             {
                 this.world = world;
+                dangerMap = new DangerMap(this);
             }
 
             public bool IsFree(int x, int y)
@@ -152,6 +154,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
             {
                 return world.IsVisible(100, xFrom, yFrom, stance, xTo, yTo, stance);
+            }
+
+
+            public int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing)
+            {
+                return dangerMap.DangerIndex(x, y, stance);
             }
         }
 

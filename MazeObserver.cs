@@ -10,6 +10,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
     {
         bool IsFree(int x, int y);
         bool HasNotWallOrUnit(int x, int y);
+        int Width { get; }
+        int Height { get; }
+
+        int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing);
     }
 
     //TODO: points cache
@@ -71,5 +75,5 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         IList<Direction> NextSteps(IMaze maze, Point currentPosition, int countSteps);
     }
 
-    
+
 }

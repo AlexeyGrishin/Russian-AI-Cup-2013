@@ -18,11 +18,21 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         }
         public bool CanAttackFromHere { get; set; }
         public bool CanBeAttacked { get; set; }
+
+        public bool CanBeAttackedOnKneel { get; set; }
+
         public int DistanceToEnemy { get; set; }
         public int DistanceToTeam { get; set; }
         public bool CloserToEnemy { get; set; }
+        public bool VisibleToEnemy { get; set; }
 
         public bool FreeSpace { get; set; }
+        /// > 0 - dangerous, =0 - neutral, < 0 - good to stand
+        public int DangerIndex { get; set; }
+        public int AllWayDangerIndex
+        {
+            get { return DangerIndex + (Back == null ? 0 : Back.AllWayDangerIndex); }
+        }
 
         public int DistanceToTarget { get; set; }
 
@@ -105,24 +115,18 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         }
     }
 
-    public interface IWalkingMaze : IMaze
-    {
-        int Width { get; }
-        int Height { get; }
-    }
-
     public class WalkableMap
     {
         private PossibleMove[,] map;
 
-        public WalkableMap(IWalkingMaze maze)
+        public WalkableMap(IMaze maze)
         {
             map = new PossibleMove[maze.Width, maze.Height];
             for (var x = 0; x < maze.Width; x++)
             {
                 for (var y = 0; y < maze.Height; y++)
                 {
-                    map[x, y] = maze.IsFree(x, y) ? new PossibleMove { X = x, Y = y } : null;
+                    map[x, y] = maze.IsFree(x, y) ? new PossibleMove { X = x, Y = y, DangerIndex = maze.DangerIndex(x, y) } : null;
                 }
             }
         }
@@ -138,6 +142,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     item.Back = null;
                     item.CanAttackFromHere = false;
                     item.CanBeAttacked = false;
+                    item.CanBeAttackedOnKneel = false;
                     item.CloserToEnemy = false;
                     item.DistanceToEnemy = 0;
                     item.DistanceToTeam = 0;
@@ -146,7 +151,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             }
         }
 
-        public PossibleMove BuildMapFrom(Point point, int maxDistance, Func<PossibleMove, bool> exclude = null)
+        public PossibleMove BuildMapFrom(Point point, int maxDistance, Func<PossibleMove, bool> exclude = null, Func<PossibleMove, int> orderBy = null)
         {
             Clear();
             int x = point.X, y = point.Y;
@@ -157,6 +162,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             while (step < maxDistance && list.Count > 0)
             {
                 list = BuildStep(list, step, exclude);
+                if (orderBy != null) 
+                    list = list.OrderBy(orderBy).ToList();
                 step++;
             }
             myMove.ForEach(m =>
@@ -166,6 +173,27 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             });
             return myMove;
         }
+
+        private IList<PossibleMove> BuildStep(IList<PossibleMove> previousSteps, int step, Func<PossibleMove, bool> exclude)
+        {
+            var newSteps = new List<PossibleMove>();
+            foreach (var point in previousSteps)
+            {
+                foreach (var near in PointsAround(point))
+                {
+                    if (exclude != null && exclude(near)) continue;
+                    if (near.Step == -1)
+                    {
+                        near.Step = step + 1;
+                        point.FurtherMoves.Add(near);
+                        near.Back = point;
+                        newSteps.Add(near);
+                    }
+                }
+            }
+            return newSteps;
+        }
+
 
         public int FindDistance(PossibleMove from, int limit, Func<PossibleMove, bool> criteria)
         {
@@ -229,7 +257,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             return FindWay(from, to.Point, closeDistance, continueWay);
         }
-        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to, int closeDistance = 0, bool continueWay = false)
+        public IList<IEnumerable<PossibleMove>> FindWays(PossibleMove from, Point to, int closeDistance = 0, bool continueWay = false)
         {
             if (from.Step < 0 || (from.Step != 0 && !continueWay)) throw new Exception("Call BuildMapFrom first for this point");
             var minKnownDistance = Math.Abs(from.X - to.X) + Math.Abs(from.Y - to.Y);
@@ -238,29 +266,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 a.DistanceToTarget = Math.Abs(a.X - to.X) + Math.Abs(a.Y - to.Y);
                 if (a.DistanceToTarget < minKnownDistance) minKnownDistance = a.DistanceToTarget;
             });
-            return from.Where(a => a.DistanceToTarget <= Math.Max(closeDistance, minKnownDistance)).Select(a => new {Path = a.PathToThis(), Distance = a.DistanceToTarget})
-                .OrderBy(a => a.Path.Count() + a.Distance*2).Select(a => a.Path).FirstOrDefault().ToList();
+            return from.Where(a => a.DistanceToTarget <= Math.Max(closeDistance, minKnownDistance)).Select(a => a.PathToThis()).ToList();
+
+        }
+        public IEnumerable<PossibleMove> FindWay(PossibleMove from, Point to, int closeDistance = 0, bool continueWay = false)
+        {
+            return FindWays(from, to, closeDistance, continueWay)
+                .Select(a => new { Path = a, Distance = a.Last().DistanceToTarget })
+                .OrderBy(a => (a.Path.Count() + a.Distance * 2) * 10).Select(a => a.Path).FirstOrDefault();
         }
 
-        private IList<PossibleMove> BuildStep(IList<PossibleMove> previousSteps, int step, Func<PossibleMove, bool> exclude)
-        {
-            var newSteps = new List<PossibleMove>();
-            foreach (var point in previousSteps)
-            {
-                foreach (var near in PointsAround(point))
-                {
-                    if (exclude != null && exclude(near)) continue;
-                    if (near.Step == -1)
-                    {
-                        near.Step = step + 1;
-                        point.FurtherMoves.Add(near);
-                        near.Back = point;
-                        newSteps.Add(near);
-                    }
-                }
-            }
-            return newSteps;
-        }
 
         public PossibleMove Get(int x, int y)
         {
@@ -292,13 +307,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             return instance;
         }
-        public static WalkableMap Instance(IWalkingMaze maze)
+        public static WalkableMap Instance(IMaze maze)
         {
             return instance ?? (instance = new WalkableMap(maze));
         }
 
         //for tests
-        public static WalkableMap Create(IWalkingMaze maze)
+        public static WalkableMap Create(IMaze maze)
         {
             return (instance = new WalkableMap(maze));
         }

@@ -29,6 +29,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
     {
         PossibleMove Location { get; }
         int AttackRange { get;  }
+        int VisionRange { get; }
         bool IsSick { get; }
         
     }
@@ -96,6 +97,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         public int LostMobility = 0;
 
+        //public int AttackFromShadow = 0;
+
+        public int DangerIndexChange = 0;
+
         public String Name;
 
         public StrategyChange(String name)
@@ -129,10 +134,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             if (another.UnitedDamage != UnitedDamage) return Better(UnitedDamage - another.UnitedDamage);
 
             if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
+            //if (another.AttackFromShadow != AttackFromShadow) return Better(AttackFromShadow - another.AttackFromShadow);
+
             if (another.PotentiallyHeal != PotentiallyHeal) return Better(PotentiallyHeal - another.PotentiallyHeal);
             if (another.PotentiallyIncreasePower != PotentiallyIncreasePower) return Better(PotentiallyIncreasePower - another.PotentiallyIncreasePower);
             if (another.PotentiallyHelpToAttack != PotentiallyHelpToAttack) return Better(PotentiallyHelpToAttack - another.PotentiallyHelpToAttack);
-            if (another.PotentiallyStuck != PotentiallyStuck) return Worse(PotentiallyStuck - another.PotentiallyStuck);
+            if (another.DangerIndexChange != DangerIndexChange) return Worse(DangerIndexChange - another.DangerIndexChange);
+            //if (another.PotentiallyStuck != PotentiallyStuck) return Worse(PotentiallyStuck - another.PotentiallyStuck);
             if (another.PotentiallyThrowGrenade != PotentiallyThrowGrenade) return Better(PotentiallyThrowGrenade - another.PotentiallyThrowGrenade);
             
             return 0;
@@ -152,12 +160,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         public override string ToString()
         {
-            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}({9}) = {11}, heal = {8}, flags = {4} {5} {6} {7} {10} {12}",
+            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}({9}) = {11}, heal = {8}, flags = {4} {5} {6} {7} {10} {12} {13}, danger = {14}",
                 OurLost, EnemyLost, OurDamage, 
                 EnemyDamage, F(PotentiallyIncreasePower, "pow"), F(PotentiallyHelpToAttack, "atc"), 
                 F(PotentiallyThrowGrenade, "gre"), F(PotentiallyHeal, "hea"),  OurHeal,
-                EnemyDamageNHeal, F(PotentiallyStuck, "stk"), UnitedDamage,
-                F(-LostMobility, "mob")
+                EnemyDamageNHeal, F(0, "stk"), UnitedDamage,
+                F(-LostMobility, "mob"), F(0/*AttackFromShadow*/, "sha"), DangerIndexChange
                 );
         }
 
@@ -187,10 +195,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "kneel and shoot",                ActionDraft.OnKneel, ActionDraft.Shoot);
                 Add(list, "kneel and shoot and stand back", ActionDraft.OnKneel, ActionDraft.Shoot, ActionDraft.StandUp);
                 Add(list, "line down and shoot", ActionDraft.LieDown, ActionDraft.Shoot);
+                Add(list, "shoot and kneel to hide", ActionDraft.Shoot, ActionDraft.OnKneel);
             }
+
             Add(list, "come and shoot",             ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.Shoot);
-            if (battleCase.Self.Type == TrooperType.Sniper)
+            //if (battleCase.Self.Type == TrooperType.Sniper)
             {
+                Add(list, "kneel to hide", ActionDraft.OnKneel);
                 Add(list, "come and kneel", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.OnKneel);   //for sniper
                 Add(list, "come and lie down", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.LieDown);   //for sniper
             }
@@ -314,7 +325,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                             .Select(w => w.Take(movingActionsCount + 1)).Distinct(new Comparer()).ToList();
                         break;
                     case ActionDraft.StepFromEnemy:
-                        ways = battleCase.WaysFromEnemy.Where(w => w.Count() > movingActionsCount).Where(w => !w.ElementAt(movingActionsCount).CanBeAttacked)
+                        ways = battleCase.WaysFromEnemy.Where(w => w.Count() > movingActionsCount).Where(w => !w.ElementAt(movingActionsCount).CanBeAttacked || !w.ElementAt(movingActionsCount).CanBeAttackedOnKneel)
                             .Select(w => w.Take(movingActionsCount + 1)).Distinct(new Comparer()).OrderBy(w => w.Last().DistanceToTeam).ToList();
                         break;
                     case ActionDraft.StepToSickAlly:
@@ -353,13 +364,22 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             int points = battleCase.Self.Actions;
             var currentPosition = battleCase.Self.Position;
             int overallDistance = 0;
-            var actions = strategy.Actions;
+            var actions = strategy.Actions.ToList();
             var currentLocation = battleCase.Self.Location;
             var hasRation = battleCase.Self.HasFieldRation;
             if (battleCase.Self.IsSick && battleCase.Self.HasMedkit && battleCase.Self.DoIfCan(ActionType.UseMedikit, ref points))
             {
                 sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y });
                 sr.Change.OurDamage -= battleCase.Self.MedkitHealth;
+            }
+            if (way != null && way.Last().CanBeAttacked && !way.Last().CanBeAttackedOnKneel)
+            {
+                var lastMove = actions.LastIndexOf(ActionDraft.StepFromEnemy);
+                if (lastMove != -1)
+                {
+                    Console.WriteLine("This way assumes kneeling at the end to hide");  //[DEBUG]
+                    actions.Add(ActionDraft.OnKneel);   //TODO: unit tests on it
+                }
             }
             sr.Change.PotentiallyStuck = currentLocation.FreeSpace ? 0 : 2;
             foreach (var action in actions)
@@ -443,6 +463,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             if (battleCase.Self.Type != TrooperType.Sniper)
             {
                 sr.Change.LostMobility += (TrooperStance.Standing - currentPosition);
+                if (currentLocation.CanBeAttacked && !currentLocation.CanBeAttackedOnKneel) sr.Change.LostMobility = 0;
             }
             else if (currentLocation.CanAttackFromHere)
             {
@@ -451,7 +472,23 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     return sr.Impossible("Sniper cannot attack enemy next step from position " + currentPosition);
                 sr.Change.PotentiallyHelpToAttack += (TrooperStance.Standing - currentPosition);
             }
-            CalculateEnemyResponse(sr, battleCase, currentLocation, currentPosition);
+            //visibility
+            /*
+            var wasVisibleBefore = battleCase.AllEnemies.Any(e => e.WasInteraction);
+            if (!wasVisibleBefore)
+            {
+                if (!currentLocation.VisibleToEnemy)
+                {
+                    sr.Change.AttackFromShadow++;
+                }
+                else if (!battleCase.Self.Location.VisibleToEnemy)
+                {
+                    sr.Change.AttackFromShadow--;
+                }
+            }*/
+            //danger index
+            sr.Change.DangerIndexChange = currentLocation.DangerIndex;// -battleCase.Self.Location.DangerIndex;
+            CalculateEnemyResponse(sr, battleCase, currentLocation, currentPosition, points);
             return sr;
         }
 
@@ -494,7 +531,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return true;
         }
 
-        private static void CalculateEnemyResponse<T>(StrategyResult sr, BattleCase2<T> battleCase, PossibleMove currentLocation, TrooperStance currentPosition) where T : Warrior2
+        private static void CalculateEnemyResponse<T>(StrategyResult sr, BattleCase2<T> battleCase, PossibleMove currentLocation, TrooperStance currentPosition, int leftPoints) where T : Warrior2
         {
             var allEnemies = battleCase.OtherEnemies.ToList();
             if (sr.Change.EnemyLost == 0) allEnemies = allEnemies.Concat(new List<T> {battleCase.Enemy}).ToList();
@@ -531,19 +568,24 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
                     var toAttack = alliesAndSelf.Where(a => a.Alive).OrderBy(a => 
                     {
-                        var dist = WalkableMap.Instance().FindDistance(a.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked);
+                        var dist = WalkableMap.Instance().FindDistance(a.Location, MyStrategy.MaxStepsEnemyWillDo, m => a.Position == TrooperStance.Standing ? m.CanBeAttacked : m.CanBeAttackedOnKneel);
                         if (dist == -1) return 1000;
                         return dist * 100 + a.Warrior.Hitpoints;
                     }).FirstOrDefault();
                     if (toAttack != null)
                     {
-                        var stepsToAttack = WalkableMap.Instance().FindDistance(toAttack.Location, MyStrategy.MaxStepsEnemyWillDo, m => m.CanBeAttacked);
+                        var stepsToAttack = WalkableMap.Instance().FindDistance(toAttack.Location, MyStrategy.MaxStepsEnemyWillDo, m => toAttack.Position == TrooperStance.Standing ? m.CanBeAttacked : m.CanBeAttackedOnKneel);
                         if (toAttack.Warrior.VisionRange > enemy.VisionRange)
                             stepsToAttack++;
 
                         var enemyPoints = enemy.Actions - enemy.Cost(ActionType.Move) * stepsToAttack;
                         if (enemy.HasFieldRation) enemyPoints += enemy.FieldRationExtraPoints;
                         if (enemy.Type == TrooperType.Sniper && stepsToAttack > 0) enemyPoints = 0;
+                        //var noOneSeeAttacked = !allEnemies.Any(e => Tool.GetRadius(e.VisionRange).Contains(Math.Abs(e.Location.X - toAttack.Location.X), Math.Abs(e.Location.Y - toAttack.Location.Y)));
+                        //if (!enemy.WasInteraction && noOneSeeAttacked)
+                        //{
+                        //    enemyPoints = 0; //Assume enemy who did not see us will not follow us to attack
+                        //}
                         while (enemy.DoIfCan(ActionType.Shoot, ref enemyPoints))
                         {
                             var dmg = (int)(enemy.GetDamage() * (1 + (TrooperStance.Standing - toAttack.Position) * MyStrategy.NotStandingDamageCoeff));
@@ -645,7 +687,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             if (point.CloserToEnemy)
             {
                 if (battleCase.Self.HasGrenade) sr.Change.PotentiallyThrowGrenade++;
-                sr.Change.PotentiallyHelpToAttack++;
+                sr.Change.PotentiallyHelpToAttack += 10-point.DistanceToEnemy ;
             }
             if (point.DistanceToTeam != oldLoc.DistanceToTeam)
             {

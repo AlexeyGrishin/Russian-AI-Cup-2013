@@ -28,9 +28,10 @@ namespace Tests.AI
             move = new Move();
         }
 
-        private void Init(string[] map, int backDistance = 5, Action<WalkableMap, Point, Point, Point> action = null)
+        private void Init(string[] map, int backDistance = 5, Action<WalkableMap, Point, Point, Point> action = null, Action postMazeCreate = null)
         {
             maze = new MockMaze<Warrior2>(map);
+            if (postMazeCreate != null) postMazeCreate();
             var soldierPoint = maze.Trooper(TrooperType.Soldier);
             var commanderPoint = maze.Trooper(TrooperType.Commander);
             var medicPoint = maze.Trooper(TrooperType.FieldMedic);
@@ -67,21 +68,54 @@ namespace Tests.AI
             Init(new string[] {
                 "c  ",
                 "   ",
+                "   ",
+                "   ",
                 "   "
             });
             SuggestMove(commander);
             AssertMove(commander, Direction.East);
             SuggestMove(commander);
-            AssertMove(commander, Direction.East);
-            SuggestMove(commander);
             AssertMove(commander, Direction.South);
             SuggestMove(commander);
             AssertMove(commander, Direction.South);
-            SuggestMove(commander);
-            AssertMove(commander, Direction.West);
             SuggestMove(commander);
             AssertMove(commander, Direction.North);
+            commander.AActions = 10;
+            SuggestMove(commander);
+            AssertMove(commander, Direction.North);
+            SuggestMove(commander);
+            AssertMove(commander, Direction.East);
         }
+
+        [TestMethod]
+        public void Danger()
+        {
+            Init(new string[] {
+                "cx                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                " x                                               ",
+                "                                                 "
+            }, 4, (map, c, s, m) => map.BuildMapFrom(c, 20), ()=> {
+                maze.DangerIndexGetter = (x, y) => (x == 0 && y == 4) ? 10 : 0;
+            });
+            SuggestMove(commander);
+            AssertMove(commander, Direction.South);
+            SuggestMove(commander);
+            AssertMove(commander, Direction.South);
+            SuggestMove(commander);
+            AssertMove(commander, Direction.South);
+            SuggestMove(commander);
+            AssertNoMove(commander);
+
+        }
+
         [TestMethod]
         public void MainSuccessScenario()
         {
@@ -170,7 +204,7 @@ namespace Tests.AI
             if (move.Action == ActionType.Move)
             {
                 trooper.ALocation = WalkableMap.Instance().Get(trooper.ALocation.Point.To(move.Direction));
-
+                trooper.AActions -= 2;
             }
         }
 

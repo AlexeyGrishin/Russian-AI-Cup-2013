@@ -16,7 +16,7 @@ namespace Tests.AI
 
 
 
-        class DumbMaze : IWalkingMaze, IWarriorMaze<Warrior2Mock>
+        class DumbMaze : IMaze, IWarriorMaze<Warrior2Mock>
         {
 
             public int Width
@@ -48,6 +48,12 @@ namespace Tests.AI
             public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
             {
                 return true;
+            }
+
+
+            public int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing)
+            {
+                return 1;
             }
         }
 

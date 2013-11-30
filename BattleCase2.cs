@@ -90,11 +90,84 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         }
     }
 
-    public interface IWarriorMaze<T> : IMaze where T : Positioned2
+    //TODO: reduce interfaces
+    public interface IVisibilityMaze: IMaze
+    {
+        bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo);
+
+    }
+
+    public interface IWarriorMaze<T> : IMaze, IVisibilityMaze where T : Positioned2
     {
         bool CanAttack(T attacker, int xFrom, int yFrom, T attackWho, int xTo, int yTo);
-        bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo);
     }
+
+
+    public class CellVisibility
+    {
+        public int VisibleFromHereOnly = 0;
+        public int VisibleOutsideOnly = 0;
+    }
+
+    public class DangerMap
+    {
+        private int[, ,] dangerMap;
+
+        private CellVisibility[] CountVisibility(IVisibilityMaze maze, int x0, int y0, int radius)
+        {
+            var res = new CellVisibility[] { new CellVisibility(), new CellVisibility(), new CellVisibility() };
+            var r = Tool.GetRadius(radius);
+            for (var x = 0; x < maze.Width; x++)
+            {
+                for (var y = 0; y < maze.Height; y++)
+                {
+                    if (maze.IsFree(x, y) && r.Contains(Math.Abs(x - x0), Math.Abs(y - y0)))
+                    {
+                        for (var stance = TrooperStance.Prone; stance <= TrooperStance.Standing; stance++) {
+                            var visibleFromHere = maze.CanAttack(x0, y0, stance, x, y);
+                            var visibleFromThere = maze.CanAttack(x, y, stance, x0, y0);
+                            if (visibleFromHere && !visibleFromThere)
+                            {
+                                res[(int)stance].VisibleFromHereOnly++;
+                            }
+                            if (!visibleFromHere && visibleFromThere)
+                            {
+                                res[(int)stance].VisibleOutsideOnly++;
+                            }
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+
+        public DangerMap(IVisibilityMaze maze)
+        {
+            dangerMap = new int[3, maze.Width, maze.Height];
+            for (var x = 0; x < maze.Width; x++)
+            {
+                for (var y = 0; y < maze.Height; y++)
+                {
+                    if (maze.IsFree(x, y))
+                    {
+                        var res = CountVisibility(maze, x, y, 10);
+                        for (var s = 0; s < res.Length; s++)
+                        {
+                            var dangerIndex = res[s].VisibleOutsideOnly > 0 ? res[s].VisibleOutsideOnly : -res[s].VisibleFromHereOnly;
+                            dangerMap[s, x, y] = dangerIndex;
+                        }
+                    }
+                }
+            }
+        }
+
+        public int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing)
+        {
+            return dangerMap[(int)stance, x, y];
+        }
+
+    }
+
 
     public class BattleCase2<T> where T : Positioned2
     {
@@ -111,12 +184,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             Action<PossibleMove> processCell = (a =>
             {
                 a.CanAttackFromHere = maze.CanAttack(self, a.X, a.Y, enemy, enemy.Location.X, enemy.Location.Y) && myAttackRadius.Contains(Math.Abs(enemy.Location.X - a.X), Math.Abs(enemy.Location.Y - a.Y));
-                a.CanBeAttacked = maze.CanAttack(enemy, enemy.Location.X, enemy.Location.Y, self, a.X, a.Y) && enemyAttackRadius.Contains(Math.Abs(enemy.Location.X - a.X), Math.Abs(enemy.Location.Y - a.Y));
+                a.CanBeAttacked = maze.CanAttack(enemy.Location.X, enemy.Location.Y, TrooperStance.Standing, a.X, a.Y) && enemyAttackRadius.Contains(Math.Abs(enemy.Location.X - a.X), Math.Abs(enemy.Location.Y - a.Y));
                 if (!a.CanBeAttacked && OtherEnemies.Count > 0)
                 {
-                    a.CanBeAttacked = OtherEnemies.Any(e => maze.CanAttack(e, e.Location.X, e.Location.Y, self, a.X, a.Y) && Tool.GetRadius(e.AttackRange).Contains(Math.Abs(e.Location.X - a.X), Math.Abs(e.Location.Y - a.Y)));
+                    a.CanBeAttacked = OtherEnemies.Any(e => maze.CanAttack(e.Location.X, e.Location.Y, TrooperStance.Standing, a.X, a.Y) && Tool.GetRadius(e.AttackRange).Contains(Math.Abs(e.Location.X - a.X), Math.Abs(e.Location.Y - a.Y)));
                 }
+                a.CanBeAttackedOnKneel = a.CanBeAttacked && AllEnemies.Any(e => maze.CanAttack(e.Location.X, e.Location.Y, TrooperStance.Kneeling, a.X, a.Y));
                 a.DistanceToEnemy = enemy.Location.DistanceTo(a);
+                a.VisibleToEnemy = AllEnemies.Any(e => maze.CanAttack(e, e.Location.X, e.Location.Y, self, a.X, a.Y) && Tool.GetRadius(e.VisionRange).Contains(Math.Abs(e.Location.X - a.X), Math.Abs(e.Location.Y - a.Y)));
                 a.CloserToEnemy = a.DistanceToEnemy < currentDistance;
                 a.DistanceToTeam = Allies.Count() > 0 ? Allies.Select(al => al.Location.DistanceTo(a)).Sum() : 999;
             });
@@ -130,7 +205,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             });*/
             WaysToEnemy = new List<IEnumerable<PossibleMove>> { WalkableMap.Instance().FindWay(self.Location, Enemy.Location, (m) => m.CanAttackFromHere) };
             WaysFromEnemy = new List<IEnumerable<PossibleMove>>(5);
-            self.Location.Where(a => !a.CanBeAttacked && a.FurtherMoves.Count == 0).ToList().ForEach(a =>
+            self.Location.Where(a => (!a.CanBeAttacked || !a.CanBeAttackedOnKneel) && a.FurtherMoves.Count == 0).ToList().ForEach(a =>
             {
                 WaysFromEnemy.Add(a.PathToThis());
             });

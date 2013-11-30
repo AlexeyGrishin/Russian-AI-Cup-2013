@@ -36,7 +36,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             checkPoints.Add(oneOfCorners);
             checkPoints.Add(oppositeCorner);
             checkPoints.Add(center);
-            checkPoints.AddRange(otherCorners);
+            checkPoints.AddRange(otherCorners.Where(c => c != oneOfCorners));
         }
 
         private List<Point> checkPoints;
@@ -75,6 +75,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             Analyze(all);
             List<PossibleMove> way = null;
+            var stepsLeft = self.Actions / self.Cost(ActionType.Move);
             if (IsEyes(self))
             {
                 var distanceToTarget = Tool.GetDistance(self.Location, CheckPoint);
@@ -83,9 +84,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");//[DEBUG]
                     GoNext();
                 }
-                var stepsLeft = self.Actions / self.Cost(ActionType.Move);
                 var possibleEnemyAt = (int)(1 + globalMaxVis - self.VisionRange);
-                if (stepsLeft <= possibleEnemyAt)
+                stepsLeft -= possibleEnemyAt;
+                if (stepsLeft <= 0)
                 {
                     Console.WriteLine("There could be enemy in " + possibleEnemyAt + "steps, so I stop");//[DEBUG]
                     move.Wait();
@@ -100,7 +101,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 else
                 {
-                    way = map.FindWay(self.Location, CheckPoint).ToList();
+                    //TODO:!!!!!!!!!!!!
+                    way = Tool.LessDangerousWay(map.FindWays(self.Location, CheckPoint).ToList(), stepsLeft).ToList();
                     Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");//[DEBUG]
                     Console.WriteLine(String.Join("," ,way.Select(w => "[" + w.X + ", " + w.Y + "]")));
                 }
@@ -123,12 +125,18 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             {
                 if (IsEyes(self))
                 {
+                    if (stepsLeft == 1 && way[1].DangerIndex > 1)
+                    {
+                        Console.WriteLine("Eyes[" + self.Type + "] stops - next point is very dangerous");//[DEBUG]
+                        move.Wait();
+                        return;
+                    }
                     eyesStuck = false;
                     nextEyesPoint = way.Count() > 2 ? way[2].Point : Point.Get(-1, -1);
                 }
                 else
                 {
-                    if (nextEyesPoint.Equals(way[1]))
+                    if (nextEyesPoint.Equals(way[1].Point))
                     {
                         Console.WriteLine("Unit[" + self.Type + "] does not want to step before eyes");
                         move.Wait();

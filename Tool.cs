@@ -148,6 +148,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
             public bool Contains(int dx, int dy)
             {
+                if (dx < 0) return Contains(-dx, dy);
+                if (dy < 0) return Contains(dx, -dy);
                 return dy <= limit(dx) && dx <= limit(dy);
             }
 
@@ -180,6 +182,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         internal static int GetDistance(Warrior2 u1, Warrior2 u2)
         {
             return GetDistance(u1.Location, u2.Location);
+        }
+
+        public static IEnumerable<PossibleMove> LessDangerousWay(IList<IEnumerable<PossibleMove>> ways, int stepsLeft)
+        {
+            var allWaysToCheckpoint = ways.ToList().OrderBy(w =>
+            {
+                var lastStepElement = Math.Min(stepsLeft, w.Count() - 2) + 1;
+                return w.ElementAt(lastStepElement).DangerIndex;
+            });
+            return allWaysToCheckpoint.FirstOrDefault();
         }
     }
 }

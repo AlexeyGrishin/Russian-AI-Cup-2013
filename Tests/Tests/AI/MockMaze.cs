@@ -14,6 +14,7 @@ namespace Tests.AI
     {
         public PossibleMove Location { get; set; }
         public int AttackRange { get; set; }
+        public int VisionRange { get; set; }
 
 
 
@@ -37,7 +38,7 @@ namespace Tests.AI
         }
     }
 
-    public class MockMaze<T> : IMaze, IWalkingMaze, IWarriorMaze<T> where T: Positioned2
+    public class MockMaze<T> : IMaze, IWarriorMaze<T> where T: Positioned2
     {
         private string[] text;
         public MockMaze(String[] text)
@@ -108,6 +109,13 @@ namespace Tests.AI
         public bool CanAttack(int xFrom, int yFrom, TrooperStance stance, int xTo, int yTo)
         {
             return true;
+        }
+
+        public Func<int, int, int> DangerIndexGetter { get; set; }
+
+        public int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing)
+        {
+            return DangerIndexGetter == null ? 1 : DangerIndexGetter(x, y);
         }
     }
 

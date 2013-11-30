@@ -35,7 +35,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             self.Update(game);
             world.Troopers.ToList().ForEach(t => t.Update(game));
             var MA = WalkableMap.Instance(world.ToMaze());
-            MA.BuildMapFrom(self.GetPosition(), (int)world.Width, p => !world.ToMaze().HasNotWallOrUnit(p.X, p.Y));
+            MA.BuildMapFrom(self.GetPosition(), (int)world.Width, p => !world.ToMaze().HasNotWallOrUnit(p.X, p.Y), p => p.AllWayDangerIndex);
             Logger.Logger.Instance().LogMap(world);//[DEBUG]
 
             var BS = new BattleStrategy();

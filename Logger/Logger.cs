@@ -56,7 +56,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
 
         private void LogMapVisibility(World map, StringBuilder builder)
         {
-            var cells = map.Cells.Select(row => row.Select(cell => new Cell { Class = cell == CellType.Free ? "free" : ("wall " + (cell.ToString().Replace("Cover", "").ToLower())) }).ToArray()).ToArray();
+            var cells = map.Cells.Select((col, x) => col.Select((cell, y) => new Cell {
+                Class = cell == CellType.Free ? "free" : ("wall " + (cell.ToString().Replace("Cover", "").ToLower())) ,
+                Text = map.ToMaze().DangerIndex(x, y) == 0 ? "" : map.ToMaze().DangerIndex(x, y).ToString()
+            }).ToArray()).ToArray();
             builder.Append("{'map':");
             LogMap(cells, builder);
             builder.Append(", 'visibility': [");
@@ -163,13 +166,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                     }
                     if (!cell.FreeSpace) c.Class += " corridor";
                     if (cell.CanBeAttacked) c.Class += " attacked";
+                    if (cell.CanBeAttackedOnKneel) c.Class += " attacked_on_kneel";
                     if (cell.CanAttackFromHere) c.Class += " canattack";
                     //if (battleCase.WaysToEnemy.Any(w => w.Contains(cell))) c.Text += ".";
                 }
                 else
                 {
                     c.Class = "wall";
-                    if (world.Cells[x][y] == CellType.LowCover || world.Cells[x][y] == CellType.MediumCover) c.Class += " low";
+                    c.Class += " " + (world.Cells[x][y].ToString().Replace("Cover", "").ToLower());
                 }
                 return c;
             }).ToArray()).ToArray(), builder);
