@@ -71,97 +71,122 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private bool eyesStuck = false;
         private Point nextEyesPoint = Point.Get(-1, -1);
 
-        public void SuggestMove(Warrior2 self, IEnumerable<Warrior2> all, Move move, bool secondAttempt = false)
+        private void SuggestMoveForEyes(Warrior2 self, IEnumerable<Warrior2> all, Move move, bool secondAttempt = false)
         {
-            Analyze(all);
             List<PossibleMove> way = null;
             var stepsLeft = self.Actions / self.Cost(ActionType.Move);
-            if (IsEyes(self))
+            var distanceToTarget = Tool.GetDistance(self.Location, CheckPoint);
+            if (distanceToTarget <= closeDistance)
             {
-                var distanceToTarget = Tool.GetDistance(self.Location, CheckPoint);
-                if (distanceToTarget <= closeDistance)
-                {
-                    Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");//[DEBUG]
-                    GoNext();
-                }
-                var possibleEnemyAt = (int)(1 + globalMaxVis - self.VisionRange);
-                stepsLeft -= possibleEnemyAt;
-                if (stepsLeft <= 0)
-                {
-                    Console.WriteLine("There could be enemy in " + possibleEnemyAt + "steps, so I stop");//[DEBUG]
-                    move.Wait();
-                    return;
-                }
-                var distance = all.Select(t => Tool.GetDistance(t, self)).Max();
-                if (distance >= backDistance)
-                {
-                    var lostOne = all.First(t => Tool.GetDistance(t, self) == distance);
-                    way = map.FindWay(self.Location, lostOne.Location).ToList();
-                    Console.WriteLine("Eyes[" + self.Type + "] goes to lost one");  //[DEBUG]
-                }
-                else
-                {
-                    //TODO:!!!!!!!!!!!!
-                    way = Tool.LessDangerousWay(map.FindWays(self.Location, CheckPoint).ToList(), stepsLeft).ToList();
-                    Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");//[DEBUG]
-                    Console.WriteLine(String.Join("," ,way.Select(w => "[" + w.X + ", " + w.Y + "]")));
-                }
+                Console.WriteLine("We are in " + distanceToTarget + " steps from target, go next");//[DEBUG]
+                GoNext();
+            }
+            var possibleEnemyAt = (int)(1 + globalMaxVis - self.VisionRange);
+            stepsLeft -= possibleEnemyAt;
+            if (stepsLeft <= 0)
+            {
+                Console.WriteLine("There could be enemy in " + possibleEnemyAt + "steps, so I stop");//[DEBUG]
+                move.Wait();
+                return;
+            }
+            var distance = all.Select(t => Tool.GetDistance(t, self)).Max();
+            if (distance >= backDistance)
+            {
+                var lostOne = all.First(t => Tool.GetDistance(t, self) == distance);
+                way = map.FindWay(self.Location, lostOne.Location).ToList();
+                Console.WriteLine("Eyes[" + self.Type + "] goes to lost one");  //[DEBUG]
             }
             else
             {
-                if (eyesStuck)
-                {
-                    way = map.FindWay(self.Location, CheckPoint).ToList();
-                    Console.WriteLine("Unit[" + self.Type + "] goes to checkpoint because eyes are blocked");//[DEBUG]
+                //TODO:!!!!!!!!!!!!
+                way = Tool.LessDangerousWay(map.FindWays(self.Location, CheckPoint).ToList(), stepsLeft).ToList();
+                Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");//[DEBUG]
+                Console.WriteLine(String.Join("," ,way.Select(w => "[" + w.X + ", " + w.Y + "]")));
+            }
 
+           if (way.Count() > 1)
+            {
+                if (stepsLeft == 1 && way[1].DangerIndex > self.Location.DangerIndex)
+                {
+                    Console.WriteLine("Eyes[" + self.Type + "] stops - next point is very dangerous");//[DEBUG]
+                    move.Wait();
+                    return;
+                }
+                eyesStuck = false;
+                nextEyesPoint = way.Count() > 2 ? way[2].Point : Point.Get(-1, -1);
+                var dir = self.Location.DirectionTo(way[1]);
+                move.Move(dir);
+            }
+            else
+            {
+                if (secondAttempt)
+                {
+                    //we are stuck by our friends...
+                    eyesStuck = true;
+                    GoPrev();
+                    return;
+                }
+                GoNext();
+                SuggestMoveForEyes(self, all, move, true);
+            }
+
+        }
+
+        private void SuggestMoveForFollower(Warrior2 self, IEnumerable<Warrior2> all, Move move)
+        {
+            List<PossibleMove> way = null;
+            if (eyesStuck)
+            {
+                way = map.FindWay(self.Location, CheckPoint).ToList();
+                Console.WriteLine("Unit[" + self.Type + "] goes to checkpoint because eyes are blocked");//[DEBUG]
+
+            }
+            else
+            {
+                var eyes = all.First(IsEyes);
+                var myDistanceToEyes = Tool.GetDistance(eyes, self);
+                var allWays = all.Select(a => new { Ally = a, DistanceToEyes = Tool.GetDistance(eyes, a), Path = map.FindWay(self.Location, a.Location, MyStrategy.TeamCloseDistance) })
+                    .ToList()
+                    .Where(a => a.Path.Count() > 1 && a.DistanceToEyes < myDistanceToEyes).OrderBy(a => a.DistanceToEyes);
+                var shortWays = allWays.Where(a => a.Path.Count() < 6);
+
+                var away = shortWays.FirstOrDefault() ?? allWays.FirstOrDefault();
+                if (away != null)
+                {
+                    Console.WriteLine("Unit[" + self.Type + "] follows " + away.Ally.Type);//[DEBUG]
+                    way = away.Path.ToList();
                 }
                 else
                 {
-                    way = map.FindWay(self.Location, all.First(t => IsEyes(t)).Location, MyStrategy.TeamCloseDistance).ToList();
-                    Console.WriteLine("Unit[" + self.Type + "] follows");//[DEBUG]
+                    way = new List<PossibleMove>();
                 }
             }
             if (way.Count() > 1)
             {
-                if (IsEyes(self))
+                if (nextEyesPoint.Equals(way[1].Point))
                 {
-                    if (stepsLeft == 1 && way[1].DangerIndex > 1)
-                    {
-                        Console.WriteLine("Eyes[" + self.Type + "] stops - next point is very dangerous");//[DEBUG]
-                        move.Wait();
-                        return;
-                    }
-                    eyesStuck = false;
-                    nextEyesPoint = way.Count() > 2 ? way[2].Point : Point.Get(-1, -1);
-                }
-                else
-                {
-                    if (nextEyesPoint.Equals(way[1].Point))
-                    {
-                        Console.WriteLine("Unit[" + self.Type + "] does not want to step before eyes");
-                        move.Wait();
-                        return;
-                    }
+                    Console.WriteLine("Unit[" + self.Type + "] does not want to step before eyes");
+                    move.Wait();
+                    return;
                 }
                 var dir = self.Location.DirectionTo(way[1]);
                 move.Move(dir);
             }
             else
             {
-                if (IsEyes(self))
-                {
-                    if (secondAttempt)
-                    {
-                        //we are stuck by our friends...
-                        eyesStuck = true;
-                        GoPrev();
-                        return;
-                    }
-                    GoNext();
-                    SuggestMove(self, all, move, true);
-                    return;
-                }
                 move.Wait();
+            }
+        }
+
+        public void SuggestMove(Warrior2 self, IEnumerable<Warrior2> all, Move move)
+        {
+            Analyze(all);
+            if (IsEyes(self))
+            {
+                SuggestMoveForEyes(self, all, move);
+            }
+            else {
+                SuggestMoveForFollower(self, all, move);
             }
         }
     }

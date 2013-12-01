@@ -225,5 +225,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int VisionRange { get { return (int)orig.VisionRange; } }
 
+
+        private int expectedMinimalHP;
+        internal void SaveHitpoints(int possibleIncrement = 0)
+        {
+            expectedMinimalHP = orig.Hitpoints + possibleIncrement;
+        }
+
+        public bool HasBeenDamaged()
+        {
+            return orig.Hitpoints < expectedMinimalHP;
+        }
     }
 }

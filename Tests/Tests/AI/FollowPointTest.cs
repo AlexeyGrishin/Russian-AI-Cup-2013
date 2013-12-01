@@ -136,6 +136,9 @@ namespace Tests.AI
                 "            ",
                 "            "
             }, 4, (map, c,s,m) => map.BuildMapFrom(c, 20));
+            commander.AActions = 500;
+            medic.AActions = 500;
+            soldier.AActions = 500;
 
             SuggestMove(commander);
             //TODO: fix tests later
@@ -147,7 +150,7 @@ namespace Tests.AI
             SuggestMove(commander);
             AssertMove(commander, Direction.East);
             SuggestMove(commander);
-            AssertMove(commander, Direction.East);
+            AssertMove(commander, Direction.North);
             SuggestMove(commander);
             AssertMove(commander, Direction.West);    //becasue medic is far
 
