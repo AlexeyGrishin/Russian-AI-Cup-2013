@@ -63,10 +63,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             howManySeenBefore = enemies.Count();
             if (!self.Ext().HasNextMove())
             {
-                var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id);
+                var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id).ToList();
+
+                var battleCase3 = new BattleCase3<TrooperExt>(self.Ext(), world.ToMaze(), allies.Select(a => a.Ext()).ToList(), enemies.Select(a => a.Ext()).ToList());
+                battleCase3.Recalculate();
+
                 bool done = false;
                 var resolutions = new List<StrategyResult>();
                 var casesToLog = new List<Tuple<BattleCase2<TrooperExt>, IList<StrategyResult>>>();  //[DEBUG]
+
                 foreach (var enemy in enemies)
                 {
                     var battleCase = new BattleCase2<TrooperExt>(self.Ext(), enemy.Ext(), world.ToMaze(), allies.Select(a => a.Ext()), enemies.Where(e => e != enemy).Select(e => e.Ext()));
@@ -78,7 +83,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 resolutions.Reverse();
                 var best = resolutions.FirstOrDefault(r => r.Possible);
                 foreach (var battleCase in casesToLog)                                              //[DEBUG]
-                    Logger.Logger.Instance().LogBattle(battleCase.Item1, battleCase.Item2, resolutions, world, best);       //[DEBUG]
+                    Logger.Logger.Instance().LogBattle(battleCase.Item1, battleCase.Item2, resolutions, world, best, battleCase3);       //[DEBUG]
                 if (best != null)
                 {
                     self.Ext().AddMoves(best.Moves);

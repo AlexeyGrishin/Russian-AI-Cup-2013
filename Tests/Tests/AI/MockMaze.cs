@@ -236,6 +236,11 @@ namespace Tests.AI
 
         public int AVisionRange { get; set; }
         public override int VisionRange { get { return AVisionRange; } }
+
+        public override bool IsTeammate
+        {
+            get { return true; }
+        }
     }
 
 }

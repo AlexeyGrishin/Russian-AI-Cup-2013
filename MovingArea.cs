@@ -6,6 +6,13 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 {
+
+    public interface IMapContext
+    {
+        PossibleMove this[PossibleMove key] {get;}
+        PossibleMove this[Point key] { get; }
+    }
+
     public class PossibleMove
     {
         public int Step { get; set; }
@@ -17,16 +24,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return Tool.GetDirection(X, Y, anotherMove.X, anotherMove.Y);
         }
         public bool CanAttackFromHere { get; set; }
-        public bool CanBeAttacked { get; set; }
-
+        public bool CanBeAttackedSomehow { get { return CanBeAttackedOnKneel || CanBeAttackedOnProne || CanBeAttackedOnStand ;} }
+        public bool CanHideFromAttackSomehow { get { return !CanBeAttackedOnKneel || !CanBeAttackedOnProne || !CanBeAttackedOnStand; } }
+        public bool CanBeAttackedOnStand { get; set; }
         public bool CanBeAttackedOnKneel { get; set; }
+        public bool CanBeAttackedOnProne { get; set; }
+        public bool CanBeAttacked { get; set; }//TODO: delete
 
         public int DistanceToEnemy { get; set; }
         public int DistanceToTeam { get; set; }
         public bool CloserToEnemy { get; set; }
         public bool VisibleToEnemy { get; set; }
+        public bool VisibleToUs { get; set; }
 
-        public bool FreeSpace { get; set; }
+        public bool FreeSpace { get; set; } //TODO: delete
         /// > 0 - dangerous, =0 - neutral, < 0 - good to stand
         public int DangerIndex { get; set; }
         public int AllWayDangerIndex
@@ -57,6 +68,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             ForEach(a => { if (func(a)) list.AddFirst(a); });
             return list;
         }
+
+        public IEnumerable<PossibleMove> Where(Func<PossibleMove, bool> func, Func<PossibleMove, bool> andParent)
+        {
+            return Where(p => func(p) && (p.Back == null || andParent(p.Back)));
+        }
+
 
         public IEnumerable<PossibleMove> WhereLeafs(Func<PossibleMove, bool> func)
         {
@@ -113,9 +130,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             return X + Y;
         }
+
+        public bool SamePosition(PossibleMove unitOldPos)
+        {
+            return Point.Equals(unitOldPos.Point);
+        }
     }
 
-    public class WalkableMap
+    public class WalkableMap : IMapContext
     {
         private PossibleMove[,] map;
 
@@ -141,12 +163,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     item.FurtherMoves.Clear();
                     item.Back = null;
                     item.CanAttackFromHere = false;
-                    item.CanBeAttacked = false;
+                    item.CanBeAttackedOnStand = false;
                     item.CanBeAttackedOnKneel = false;
+                    item.CanBeAttackedOnProne = false;
                     item.CloserToEnemy = false;
                     item.DistanceToEnemy = 0;
                     item.DistanceToTeam = 0;
                     item.FreeSpace = false;
+                    item.VisibleToUs = false;   //TODO: delete
+                    item.VisibleToEnemy = false;
                 }
             }
         }
@@ -283,6 +308,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return map[x, y];
         }
 
+        public PossibleMove this[PossibleMove key] { get { return Get(key.X, key.Y); } }
+        public PossibleMove this[Point key] { get { return Get(key.X, key.Y); } }
+
         public int Width { get { return map.GetLength(0); } }
         public int Height { get { return map.GetLength(1); } }
 
@@ -300,6 +328,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         }
 
+        //Singletone - for walking only
 
         private static WalkableMap instance;
 

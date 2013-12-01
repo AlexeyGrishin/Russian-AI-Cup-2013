@@ -11,9 +11,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
     public enum ActionDraft
     {
+        None,
         StepToEnemy,
         StepFromEnemy,
         StepToSickAlly,
+        StepBack,
+        StepToThrow,
         Shoot,
         HealSelf,   //medkit
         HealAlly,

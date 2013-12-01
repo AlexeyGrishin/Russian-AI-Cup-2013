@@ -104,7 +104,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int Actions
         {
-            get { return orig.IsTeammate ? orig.ActionPoints : orig.InitialActionPoints; }
+            get { return orig.IsTeammate && orig.Type == MyStrategy.Self ? orig.ActionPoints : orig.InitialActionPoints; }
         }
 
         public override int MaxActions
@@ -225,5 +225,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int VisionRange { get { return (int)orig.VisionRange; } }
 
+
+        public override bool IsTeammate
+        {
+            get { return orig.IsTeammate; }
+        }
     }
 }

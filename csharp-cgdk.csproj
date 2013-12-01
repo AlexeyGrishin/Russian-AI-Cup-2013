@@ -70,7 +70,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BattleCase2.cs" />
+    <Compile Include="BattleCase3.cs" />
     <Compile Include="BattleStrategy.cs" />
+    <Compile Include="Emulator3.cs" />
     <Compile Include="FollowPoint.cs" />
     <Compile Include="MovingArea.cs" />
     <Compile Include="Strategies.cs" />

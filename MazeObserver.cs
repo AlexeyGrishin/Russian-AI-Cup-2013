@@ -51,7 +51,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 var p = (Point)o;
                 return X == p.X && Y == p.Y;
             }
-            return false;
+            throw new ArgumentException("Trying to compare non-Point object with point - has to be error") ;
         }
 
         public override int GetHashCode()

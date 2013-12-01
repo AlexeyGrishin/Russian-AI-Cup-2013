@@ -18,6 +18,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
         private bool mapLogged = false;
         private bool givenName = false;
         private bool battleLogged = false;
+        private bool battleLogged3 = false;
 
         public Logger()
         {
@@ -127,8 +128,78 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
             builder.Append("]");
         }
 
-        public void LogBattle(BattleCase2<TrooperExt> battleCase, IEnumerable<StrategyResult> results, IEnumerable<StrategyResult> allresults, World world, StrategyResult best)
+        private void LogBattle3(World world, BattleCase3<TrooperExt> battleCase3)
         {
+            if (!battleLogged3)
+            {
+                var b1 = new StringBuilder("[]");
+                /*                b1.Append("{'map':");
+                                LogMapVisibility(world, b1);
+                                b1.Append("}, 'steps': []}");*/
+                System.IO.File.WriteAllText(String.Format("./Res/battle3-{0}.html", name), WrapObserver(b1.ToString(), "steps"));
+                battleLogged3 = true;
+            }
+
+            var builder = new StringBuilder();
+            builder.Append("{name:\"");
+            builder.Append(battleCase3.Self.Type + "-" + MyStrategy.Turn);
+            builder.Append("\", data: ");
+            LogMap(battleCase3.Self.BattleMap.ToArray().Select((row, x) => row.Select((cell, y) =>
+            {
+                var c = new Cell();
+                if (cell != null)
+                {
+                    var trooperExt = battleCase3.All.Where(t => t.Location.X == x && t.Location.Y == y).Select(w => w.Warrior).FirstOrDefault();
+                    //var trooper = world.Troopers.Where(t => t.X == cell.X && t.Y == cell.Y).FirstOrDefault();
+                    if (trooperExt != null)
+                    {
+                        var trooper = trooperExt.orig;
+                        c.Class = trooper.IsTeammate ? "friend" : "enemy";
+                        c.Text = "cmsrt".Substring((int)trooper.Type, 1);
+                        if (trooper.IsHoldingMedikit) c.Class += " medkit";
+                        if (trooper.IsHoldingGrenade) c.Class += " grenade";
+                        if (trooper.IsHoldingFieldRation) c.Class += "ration";
+                        c.Class += " " + trooper.Type.ToString().ToLower();
+                        if (trooperExt.Noticed) c.Class += " noticed";
+                    }
+                    else
+                    {
+                        c.Class = cell.Step == -1 ? "empty" : "";
+                        c.Text = (cell.DangerIndex == 0 || cell.DangerIndex == 500) ? "" : cell.DangerIndex + "";
+                    }
+                    if (cell.CanBeAttackedOnStand) c.Class += " attacked";
+                    if (cell.CanBeAttackedOnStand && !cell.CanBeAttackedOnKneel) c.Class += " safe_on_kneel";
+                    if (cell.CanBeAttackedOnStand && cell.CanBeAttackedOnKneel && !cell.CanBeAttackedOnProne) c.Class += " safe_on_prone";
+                    if (cell.CanAttackFromHere) c.Class += " canattack";
+                    if (battleCase3.Self.WaysToAttack.Any(w => w.Contains(cell))) c.Class += " way_to_enemy";
+                    if (battleCase3.Self.WaysToSafe.Any(w => w.Contains(cell))) c.Class += " way_to_safe";
+                    if (battleCase3.Self.WaysToThrow.Any(w => w.Contains(cell))) c.Class += " way_to_throw";
+                }
+                else
+                {
+                    c.Class = "wall";
+                    c.Class += " " + (world.Cells[x][y].ToString().Replace("Cover", "").ToLower());
+                }
+                return c;
+            }).ToArray()).ToArray(), builder);
+            builder.Append(", troopers: [");
+            foreach (var ally in battleCase3.All)
+            {
+                builder.Append(", ");
+                LogTrooper(ally.Warrior.orig, builder);
+            }
+            builder.Append("]");
+            builder.Append(", active: \"" + battleCase3.Self.Type + "\"");
+            builder.Append(", log: [");
+            builder.Append(String.Join(",", battleCase3.All.Select(w => '"' + w.ToString().Replace("\n", "\\n") + '"')));
+            builder.Append("]}");
+            System.IO.File.AppendAllText(String.Format("./Res/battle3-{0}.html", name), WrapStep(builder.ToString()));
+
+        }
+
+        public void LogBattle(BattleCase2<TrooperExt> battleCase, IEnumerable<StrategyResult> results, IEnumerable<StrategyResult> allresults, World world, StrategyResult best, BattleCase3<TrooperExt> battleCase3)
+        {
+            LogBattle3(world, battleCase3);
             if (!battleLogged)
             {
                 var b1 = new StringBuilder("[]");

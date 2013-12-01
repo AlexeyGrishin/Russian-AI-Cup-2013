@@ -10,6 +10,26 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 {
     public static class HelperExtensions
     {
+        public static int MinOr(this IEnumerable<int> source, int def = 0)
+        {
+            return source.Count() == 0 ? def : source.Min();
+        }
+        public static int MaxOr(this IEnumerable<int> source, int def = 0)
+        {
+            return source.Count() == 0 ? def : source.Max();
+        }
+
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (var o in source) action(o);
+        }
+
+        public static string AsString(this IEnumerable<PossibleMove> source, Func<PossibleMove, string> toString = null)
+        {
+            return String.Join(" -> ", source.Select(m => String.Format("[{0},{1}]({2})", m.X, m.Y, (toString == null ? m.ToString() : toString(m)))));
+        }
+
+
         public static Move Move(this Move move, Trooper self, int x, int y)
         {
             move.Action = ActionType.Move;

@@ -12,6 +12,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private readonly Random random = new Random();
 
         public static int Turn = 0;
+        public static TrooperType Self = TrooperType.Commander;
         public static long PlayerId = -1;
 
         public static int NeedHeeling = 60;
@@ -31,6 +32,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             Turn = world.MoveIndex;
             PlayerId = self.PlayerId;
+            Self = self.Type;
             Console.WriteLine("----- Turn: " + Turn + " [" + self.Type + "]"); //[DEBUG]
             self.Update(game);
             world.Troopers.ToList().ForEach(t => t.Update(game));

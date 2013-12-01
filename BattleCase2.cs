@@ -33,6 +33,44 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public abstract int FieldRationExtraPoints { get; }
         public abstract bool IsSick { get; }
         public abstract int MedicHealth { get; }
+        public abstract bool IsTeammate { get; }
+
+        public int MaxSteps
+        {
+            get { return (Actions + (HasFieldRation ? FieldRationExtraPoints : 0)) / Cost(ActionType.Move); }
+        }
+
+        public int AbsoluteMaxSteps
+        {
+            get { return (MaxActions + (HasFieldRation ? FieldRationExtraPoints : 0)) / Cost(ActionType.Move); }
+        }
+
+        public bool CanTheoreticallyAttack(Warrior2 anotherWarrior, PossibleMove from = null)
+        {
+            from = from ?? Location;
+            return Tool.GetRadius(AttackRange).Contains(from.X - anotherWarrior.Location.X, from.Y - anotherWarrior.Location.Y);
+        }
+
+        public bool CanTheoreticallyAttack(PossibleMove anotherWarrior, PossibleMove from = null)
+        {
+            from = from ?? Location;
+            return Tool.GetRadius(AttackRange).Contains(from.X - anotherWarrior.X, from.Y - anotherWarrior.Y);
+        }
+
+        public bool CanTheoreticallySee(Warrior2 anotherWarrior)
+        {
+            return CanTheoreticallySee(anotherWarrior.Location.Point);
+        }
+
+        public bool CanTheoreticallySee(PossibleMove anotherWarrior)
+        {
+            return Tool.GetRadius(VisionRange).Contains(Location.X - anotherWarrior.X, Location.Y - anotherWarrior.Y);
+        }        
+
+        public bool CanTheoreticallySee(Point anotherWarrior)
+        {
+            return Tool.GetRadius(VisionRange).Contains(Location.X - anotherWarrior.X, Location.Y - anotherWarrior.Y);
+        }
 
         public int Cost(ActionDraft draft)
         {
