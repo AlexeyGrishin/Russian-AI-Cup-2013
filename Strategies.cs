@@ -222,6 +222,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "heal sick", ActionDraft.StepToSickAlly, 0, 5, ActionDraft.HealAlly);
                 Add(list, "go to sick", ActionDraft.StepToSickAlly, 0, 5);
             }
+            Add(list, "come, shoot, and go back", ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack);
+            Add(list, "come x 2, shoot, and go back", ActionDraft.StepToEnemy, ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack);
+            Add(list, "come x 2, shoot, and go back x 2", ActionDraft.StepToEnemy, ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack, ActionDraft.StepBack);
             return list;
         }
 
@@ -375,10 +378,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y });
                 sr.Change.OurDamage -= battleCase.Self.MedkitHealth;
             }
-            if (way != null && way.Last().CanBeAttacked && !way.Last().CanBeAttackedOnKneel)
+            if (way != null)
             {
-                var lastMove = actions.LastIndexOf(ActionDraft.StepFromEnemy);
-                if (lastMove != -1)
+                var targetPointIdx = actions.Count(a => a == ActionDraft.StepFromEnemy || a == ActionDraft.StepToEnemy || a == ActionDraft.StepToSickAlly) - actions.Count(a => a == ActionDraft.StepBack);
+
+                var lastMove = way.ElementAtOrDefault(targetPointIdx);
+                if (lastMove != null && lastMove.CanBeAttacked && !lastMove.CanBeAttackedOnKneel)
                 {
                     Console.WriteLine("This way assumes kneeling at the end to hide");  //[DEBUG]
                     actions.Add(ActionDraft.OnKneel);   //TODO: unit tests on it
@@ -391,6 +396,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 if (action == ActionDraft.StepToEnemy || action == ActionDraft.StepFromEnemy || action == ActionDraft.StepToSickAlly)
                 {
                     distance += 1;
+                    continue;
+                }
+                else if (action == ActionDraft.StepBack)
+                {
+                    distance -= 1;
                     continue;
                 }
                 else if (distance != 0)
@@ -447,7 +457,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     sr.Moves.Add(new Move { Action = ActionType.EatFieldRation });
                 }
             }
-            if (distance > 0)
+            if (distance != 0)
             {
                 if (!Move(sr, way, distance, battleCase, ref points, ref currentLocation, ref currentPosition, ref hasRation)) return sr;
             }
@@ -490,6 +500,34 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 }
             }*/
             //danger index
+            if (currentLocation.CloserToEnemy)
+            {
+                if (battleCase.Self.HasGrenade) sr.Change.PotentiallyThrowGrenade++;
+                sr.Change.PotentiallyHelpToAttack += 10 - currentLocation.DistanceToEnemy;
+            }
+            if (currentLocation.DistanceToTeam != battleCase.Self.Location.DistanceToTeam)
+            {
+                var change = Math.Max(0, Math.Abs(currentLocation.DistanceToTeam - battleCase.Self.Location.DistanceToTeam) - MyStrategy.MinDistanceToTeamInBattle);
+                if (change > 0)
+                    sr.Change.PotentiallyIncreasePower += (currentLocation.DistanceToTeam > battleCase.Self.Location.DistanceToTeam ? -change : change);
+                if (sr.Change.PotentiallyIncreasePower < 0)
+                {
+                    //return sr.SetImpossible("Too far from the team");
+                }
+            }
+            if (currentLocation.CanAttackFromHere && !battleCase.Self.Location.CanAttackFromHere)
+            {
+                sr.Change.PotentiallyHelpToAttack++;
+            }
+            if (!currentLocation.CanAttackFromHere && battleCase.Self.Location.CanAttackFromHere)
+            {
+                sr.Change.PotentiallyHelpToAttack--;
+            }
+            if (battleCase.Self.IsMedic && battleCase.SickAlly != null && battleCase.SickAlly.Location.DistanceTo(battleCase.Self.Location) > battleCase.SickAlly.Location.DistanceTo(currentLocation))
+            {
+                sr.Change.PotentiallyHeal++;
+            }
+            sr.Change.PotentiallyStuck = currentLocation.FreeSpace ? -1 : 1;
             sr.Change.DangerIndexChange = currentLocation.DangerIndex;// -battleCase.Self.Location.DangerIndex;
             CalculateEnemyResponse(sr, battleCase, currentLocation, currentPosition, points);
             return sr;
@@ -680,41 +718,29 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             if (!CheckStanceBeforeMoving(sr, battleCase, ref points, location, ref position)) return false;
             var oldLoc = location;
             var point = oldLoc;
-            for (var wayIdx = 1; wayIdx <= distance; wayIdx++)
+            if (distance > 0)
             {
-                ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
-                if (!battleCase.Self.DoIfCan(ActionType.Move, 1, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance)); 
-                sr.Moves.Add(new Move().Move(point.DirectionTo(way[wayIdx])));
-                point = way[wayIdx];
-            }
-            if (point.CloserToEnemy)
-            {
-                if (battleCase.Self.HasGrenade) sr.Change.PotentiallyThrowGrenade++;
-                sr.Change.PotentiallyHelpToAttack += 10-point.DistanceToEnemy ;
-            }
-            if (point.DistanceToTeam != oldLoc.DistanceToTeam)
-            {
-                var change = Math.Max(0, Math.Abs(point.DistanceToTeam - oldLoc.DistanceToTeam) - MyStrategy.MinDistanceToTeamInBattle);
-                if (change > 0)
-                    sr.Change.PotentiallyIncreasePower += (point.DistanceToTeam > oldLoc.DistanceToTeam ? -change : change);
-                if (sr.Change.PotentiallyIncreasePower < 0)
+                for (var wayIdx = 1; wayIdx <= distance; wayIdx++)
                 {
-                    //return sr.SetImpossible("Too far from the team");
+                    ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
+                    if (!battleCase.Self.DoIfCan(ActionType.Move, 1, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance));
+                    sr.Moves.Add(new Move().Move(point.DirectionTo(way[wayIdx])));
+                    point = way[wayIdx];
                 }
             }
-            if (point.CanAttackFromHere && !oldLoc.CanAttackFromHere)
+            else
             {
-                sr.Change.PotentiallyHelpToAttack++;
+                var currentPoint = way.Select((p, i) => new { Point = p, Index = i }).Where(pi => pi.Point.Point.Equals(point.Point)).Select(pi => pi.Index).First();
+                for (var wayIdx = currentPoint - 1; wayIdx >= currentPoint + distance; wayIdx--)
+                {
+                    ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
+                    if (!battleCase.Self.DoIfCan(ActionType.Move, 1, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance));
+                    sr.Moves.Add(new Move().Move(point.DirectionTo(way[wayIdx])));
+                    point = way[wayIdx];
+
+                }
             }
-            if (!point.CanAttackFromHere && oldLoc.CanAttackFromHere)
-            {
-                sr.Change.PotentiallyHelpToAttack--;
-            }
-            if (battleCase.Self.IsMedic && battleCase.SickAlly != null && battleCase.SickAlly.Location.DistanceTo(oldLoc) > battleCase.SickAlly.Location.DistanceTo(point))
-            {
-                sr.Change.PotentiallyHeal++;
-            }
-            sr.Change.PotentiallyStuck = point.FreeSpace ? -1 : 1;
+
             location = point;
             return true;
 

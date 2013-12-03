@@ -1,4 +1,4 @@
-﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI;
+﻿﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 using System;
@@ -106,7 +106,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
            if (way.Count() > 1)
             {
-                if (stepsLeft == 1 && way[1].DangerIndex > 1)
+                if (stepsLeft == 1 && way[1].DangerIndex > self.Location.DangerIndex)
                 {
                     Console.WriteLine("Eyes[" + self.Type + "] stops - next point is very dangerous");//[DEBUG]
                     move.Wait();
@@ -143,8 +143,23 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
             else
             {
-                way = map.FindWay(self.Location, all.First(t => IsEyes(t)).Location, MyStrategy.TeamCloseDistance).ToList();
-                Console.WriteLine("Unit[" + self.Type + "] follows");//[DEBUG]
+                var eyes = all.First(IsEyes);
+                var myDistanceToEyes = Tool.GetDistance(eyes, self);
+                var allWays = all.Select(a => new { Ally = a, DistanceToEyes = Tool.GetDistance(eyes, a), Path = map.FindWay(self.Location, a.Location, MyStrategy.TeamCloseDistance) })
+                    .ToList()
+                    .Where(a => a.Path.Count() > 1 && a.DistanceToEyes < myDistanceToEyes).OrderBy(a => a.DistanceToEyes);
+                var shortWays = allWays.Where(a => a.Path.Count() < 6);
+
+                var away = shortWays.FirstOrDefault() ?? allWays.FirstOrDefault();
+                if (away != null)
+                {
+                    Console.WriteLine("Unit[" + self.Type + "] follows " + away.Ally.Type);//[DEBUG]
+                    way = away.Path.ToList();
+                }
+                else
+                {
+                    way = new List<PossibleMove>();
+                }
             }
             if (way.Count() > 1)
             {

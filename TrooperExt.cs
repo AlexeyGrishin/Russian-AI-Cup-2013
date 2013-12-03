@@ -230,5 +230,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
         {
             get { return orig.IsTeammate; }
         }
+
+        private int expectedMinimalHP;
+        internal void SaveHitpoints(int possibleIncrement = 0)
+        {
+            expectedMinimalHP = orig.Hitpoints + possibleIncrement;
+        }
+
+        public bool HasBeenDamaged()
+        {
+            return orig.Hitpoints < expectedMinimalHP;
+        }
     }
 }

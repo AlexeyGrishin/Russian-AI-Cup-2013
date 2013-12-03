@@ -98,6 +98,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 case ActionDraft.StepFromEnemy: action = ActionType.Move; break;
                 case ActionDraft.StepToEnemy: action = ActionType.Move; break;
                 case ActionDraft.StepToSickAlly: action = ActionType.Move; break;
+                case ActionDraft.StepBack: action = ActionType.Move; break;
                 case ActionDraft.ThrowGrenade: action = ActionType.ThrowGrenade; break;
             }
             return Cost(action, count);
