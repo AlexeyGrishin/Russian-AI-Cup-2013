@@ -121,7 +121,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         private void BuildWays(Func<PossibleMove, bool> exclude, IEnumerable<BattleWarrior3<T>> allies, IEnumerable<BattleWarrior3<T>> enemies, bool quick)
         {
             if (battleMap[Location].Step != 0 || IsTeammate)
-                battleMap.BuildMapFrom(Location.Point, warrior.IsTeammate ? warrior.AbsoluteMaxSteps * 2 : warrior.AbsoluteMaxSteps, (p) => exclude(p) || !maze.IsFree(p.X, p.Y));
+                battleMap.BuildMapFrom(Location.Point, !quick ? (int)(warrior.AbsoluteMaxSteps * 2) : warrior.AbsoluteMaxSteps, (p) => !maze.IsFree(p.X, p.Y) || exclude(p));
             state.Location = battleMap[Location];
             var alliesAndSelf = allies.Concat(new List<BattleWarrior3<T>> {this}).ToList();
             state.Location.ForEach(p =>

@@ -336,11 +336,18 @@ namespace Tests.AI
             var med = new Warrior2Mock { ATeammate = false, AType = TrooperType.FieldMedic, AActions = 12, ADamage = 9, AHitpoints = 100, AAttackRange = 5, ALocation = medicLoc };
             var com = new Warrior2Mock { ATeammate = false, AType = TrooperType.Commander, AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 8, ALocation = comLoc };
             var sol = new Warrior2Mock { ATeammate = false, AType = TrooperType.Soldier, AActions = 12, ADamage = 25, AHitpoints = 120, AAttackRange = 9, ALocation = solLoc, AHasGrenade = true };
-            var battle = new BattleCase2<Warrior2Mock>(self, med, maze, new List<Warrior2Mock> { }, new List<Warrior2Mock> {com, sol});
-            var battle3 = new BattleCase3<Warrior2Mock>(self, maze, new Warrior2Mock[] { }, new[] { med, com, sol });
-            var resolution = Battle.All(battle);
+            //var battle = new BattleCase2<Warrior2Mock>(self, med, maze, new List<Warrior2Mock> { }, new List<Warrior2Mock> {com, sol});
+            BattleCase3<Warrior2Mock> battle3;
+            using (Tool.Timer("battle case 3"))
+            {
+                battle3 = new BattleCase3<Warrior2Mock>(self, maze, new Warrior2Mock[] { }, new[] { med, com, sol });
+            }
+            //var resolution = Battle.All(battle);
             Console.WriteLine();
-            var resolution3 = Battle.All3(battle3);
+            using (Tool.Timer("resolte "))
+            {
+                var resolution3 = Battle.All3(battle3);
+            }
         }
 
 
@@ -369,9 +376,9 @@ namespace Tests.AI
             var com = new Warrior2Mock { AType = TrooperType.Commander, AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 8, ALocation = comLoc, AVisionRange = 10 };
             var sol = new Warrior2Mock { AType = TrooperType.Soldier, AActions = 12, ADamage = 25, AHitpoints = 120, AAttackRange = 9, ALocation = solLoc, AHasGrenade = true, AVisionRange = 10 };
             var enemy = new Warrior2Mock { AType = TrooperType.Soldier, ATeammate = false, AActions = 10, ADamage = 15, AHitpoints = 100, AAttackRange = 7, ALocation = enemyLoc, AHasGrenade = true, AVisionRange = 10 };
-            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { com, sol });
+            //var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { com, sol });
             var battle3 = new BattleCase3<Warrior2Mock>(self, maze, new[] { com, sol }, new Warrior2Mock[] { enemy });
-            var resolution = Battle.All(battle);
+           // var resolution = Battle.All(battle);
             Console.WriteLine();
             var resolution3 = Battle.All3(battle3);
         }

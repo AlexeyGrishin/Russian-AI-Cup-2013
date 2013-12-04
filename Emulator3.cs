@@ -178,10 +178,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public static StrategyResult3 Emulate<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy) where T: Warrior2
         {
             var ways = Tool.DistinctWays(GetWays<T>(battleCase, strategy), strategy.StepsCount + 1);
-            var results = ways.Select(w => Emulate<T>(battleCase, strategy, w)).ToList();
-            results.Sort();
-            results.Reverse();
-            return results.FirstOrDefault() ?? new StrategyResult3(strategy.Name).Impossible("There is no way found for it...");
+            using (Tool.Timer(strategy.Name + ": " + ways.Count()))
+            {
+                var results = ways.Select(w => Emulate<T>(battleCase, strategy, w)).ToList();
+                results.Sort();
+                results.Reverse();
+                return results.FirstOrDefault() ?? new StrategyResult3(strategy.Name).Impossible("There is no way found for it...");
+            }
         }
 
         private static IEnumerable<IEnumerable<PossibleMove>> GetWays<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy) where T : Warrior2
@@ -206,20 +209,26 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public static StrategyResult3 Emulate<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy, IEnumerable<PossibleMove> wayToFollow) where T: Warrior2
         {
             var res = new StrategyResult3(strategy.Name);
-            if (!battleCase.Self.Location.SamePosition(battleCase.Self.Warrior.Location))
-            {
-                var a = 4;
-            }
             battleCase.BeginCase();
             var succeed = false;
             succeed = EmulateStrategy(res, battleCase, strategy, wayToFollow);
             if (succeed)
             {
-                EmulateEnemiesTurn(res, battleCase);
-                Fill(res.ChangeThisTurn, battleCase);
-                res.StartNextTurn();
-                PredictNextTurn(res, battleCase);
-                Fill(res.ChangeNextTurn, battleCase);
+                using (Tool.Timer("..enemies"))
+                {
+                    EmulateEnemiesTurn(res, battleCase);
+                }
+                using (Tool.Timer("..after enemies"))
+                {
+                    Fill(res.ChangeThisTurn, battleCase);
+                    res.StartNextTurn();
+                }
+                using (Tool.Timer("..self"))
+                {
+                    PredictNextTurn(res, battleCase);
+                    Fill(res.ChangeNextTurn, battleCase);
+
+                }
                 res.Description = ToDescription(res, battleCase);   //[DEBUG]
                 battleCase.Reset();
             }
@@ -382,59 +391,68 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             foreach (var unit in unitsToTurn)
             {
-                battleCase.Recalculate(unit);
+                using (Tool.Timer("...recalculate"))
+                {
+                    battleCase.Recalculate(unit);
+                }
                 var cases = new List<BattleCase3State>();
-                for (var wl = 0; wl <=MyStrategy.MaxStepsEnemyWillDo; wl++)
+                using (Tool.Timer("...cases "))
                 {
-                    var waysToTry = wl == 0 ? new List<IEnumerable<PossibleMove>> { new[] { unit.Location } } : Tool.DistinctWays(unit.WaysToAttack, wl + 1);
-                    foreach (var way in waysToTry)
+                    for (var wl = 0; wl <= MyStrategy.MaxStepsEnemyWillDo; wl++)
                     {
-                        var enemyPoints = unit.Warrior.MaxActions;
-                        var wayLength = way.Count() - 1;
-                        if (!unit.Warrior.DoIfCan(ActionType.Move, wayLength, ref enemyPoints)) continue;
-                        battleCase.BeginCase();
-                        unit.Location = way.Last();
-                        var attackedUnits = new List<BattleWarrior3<T>>();
-                        while (unit.Warrior.Can(ActionType.Shoot, 1, enemyPoints))
+                        var waysToTry = wl == 0 ? new List<IEnumerable<PossibleMove>> { new[] { unit.Location } } : Tool.DistinctWays(unit.WaysToAttack, wl + 1);
+                        foreach (var way in waysToTry)
                         {
-                            var lastAttackedUnit = battleCase.GetEnemiesFor(unit).Where(e => e.Alive && unitsToTurn.Any(a => a.CanSee(e))).Where(a => unit.CanAttack(a)).OrderBy(a => a.Hitpoints).FirstOrDefault();
-                            if (lastAttackedUnit == null) break;
-                            if (attackedUnits.Count() == 0 || !attackedUnits.Last().Location.SamePosition(lastAttackedUnit.Location))
-                                attackedUnits.Add(lastAttackedUnit);
-                            unit.Warrior.DoIfCan(ActionType.Shoot, ref enemyPoints);
-                            lastAttackedUnit.Damage += unit.Warrior.GetDamage();
-                        }
-                        cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
-                    }
-                }
-                if (unit.CanComeAndThrowGrenade[0])
-                {
-                    var canDoSteps = (unit.Warrior.MaxActions - unit.Warrior.Cost(ActionType.ThrowGrenade)) / unit.Warrior.Cost(ActionType.Move);
-                    var ways = unit.WaysToThrow.Where(w => w.Count() <= canDoSteps);
-                    foreach (var wayToThrow in ways)
-                    {
-                        battleCase.BeginCase();
-                        unit.Location = wayToThrow.Last();
-                        var damagedDirectly = battleCase.GetEnemiesFor(unit).Where(a => a.Alive && unitsToTurn.Any(al => a.CanSee(a)) && a.Location.RealDistanceTo(unit.Location) <= unit.Warrior.GrenadeRange).OrderBy(a => a.Hitpoints).FirstOrDefault();
-                        //TODO: near points
-                        if (damagedDirectly != null)
-                        {
-                            damagedDirectly.Damage += unit.Warrior.GetGrenadeDamage(0);
-                            cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wayToThrow.Count() + " steps and throw grenade"));
-                        }
-                        else
-                        {
-                            battleCase.EndCase();
+                            var enemyPoints = unit.Warrior.MaxActions;
+                            var wayLength = way.Count() - 1;
+                            if (!unit.Warrior.DoIfCan(ActionType.Move, wayLength, ref enemyPoints)) continue;
+                            battleCase.BeginCase();
+                            unit.Location = way.Last();
+                            var attackedUnits = new List<BattleWarrior3<T>>();
+                            while (unit.Warrior.Can(ActionType.Shoot, 1, enemyPoints))
+                            {
+                                var lastAttackedUnit = battleCase.GetEnemiesFor(unit).Where(e => e.Alive && unitsToTurn.Any(a => a.CanSee(e))).Where(a => unit.CanAttack(a)).OrderBy(a => a.Hitpoints).FirstOrDefault();
+                                if (lastAttackedUnit == null) break;
+                                if (attackedUnits.Count() == 0 || !attackedUnits.Last().Location.SamePosition(lastAttackedUnit.Location))
+                                    attackedUnits.Add(lastAttackedUnit);
+                                unit.Warrior.DoIfCan(ActionType.Shoot, ref enemyPoints);
+                                lastAttackedUnit.Damage += unit.Warrior.GetDamage();
+                            }
+                            cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
                         }
                     }
+                    if (unit.CanComeAndThrowGrenade[0])
+                    {
+                        var canDoSteps = (unit.Warrior.MaxActions - unit.Warrior.Cost(ActionType.ThrowGrenade)) / unit.Warrior.Cost(ActionType.Move);
+                        var ways = unit.WaysToThrow.Where(w => w.Count() <= canDoSteps);
+                        foreach (var wayToThrow in ways)
+                        {
+                            battleCase.BeginCase();
+                            unit.Location = wayToThrow.Last();
+                            var damagedDirectly = battleCase.GetEnemiesFor(unit).Where(a => a.Alive && unitsToTurn.Any(al => a.CanSee(a)) && a.Location.RealDistanceTo(unit.Location) <= unit.Warrior.GrenadeRange).OrderBy(a => a.Hitpoints).FirstOrDefault();
+                            //TODO: near points
+                            if (damagedDirectly != null)
+                            {
+                                damagedDirectly.Damage += unit.Warrior.GetGrenadeDamage(0);
+                                cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wayToThrow.Count() + " steps and throw grenade"));
+                            }
+                            else
+                            {
+                                battleCase.EndCase();
+                            }
+                        }
+                    }
+                    cases.Sort(comparer);
+                    cases.Reverse();
                 }
-                cases.Sort(comparer);
-                cases.Reverse();
                 //Console.WriteLine(String.Join("\n", cases));
-                var bestCase = cases.FirstOrDefault();
-                if (bestCase != null)
+                using (Tool.Timer("...begin case"))
                 {
-                    battleCase.BeginCase(bestCase);
+                    var bestCase = cases.FirstOrDefault();
+                    if (bestCase != null)
+                    {
+                        battleCase.BeginCase(bestCase);
+                    }
                 }
             }
             //TODO: expected damage VS real damage

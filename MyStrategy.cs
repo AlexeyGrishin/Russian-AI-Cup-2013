@@ -121,13 +121,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
             finally
             {
-                var end = DateTime.Now;
-                var spentTime = end - start;
-                Console.WriteLine("--- " + move.AsString() + " --- [" + spentTime.TotalMilliseconds + "ms]");
-                if (spentTime.TotalMilliseconds > 1000)
-                {
-                    Console.WriteLine("WARNING");
-                }
+                var end = DateTime.Now;//[DEBUG]
+                var spentTime = end - start;//[DEBUG]
+                Console.WriteLine("--- " + move.AsString() + " --- [" + spentTime.TotalMilliseconds + "ms]");//[DEBUG]
+                if (spentTime.TotalMilliseconds > 1000)//[DEBUG]
+                {//[DEBUG]
+                    Console.WriteLine("WARNING");//[DEBUG]
+                }//[DEBUG]
             }
 
         }

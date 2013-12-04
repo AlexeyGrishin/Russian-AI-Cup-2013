@@ -236,7 +236,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public void Dispose()
         {
-            var spent = (DateTime.Now - start).TotalMilliseconds;
+            var spent = (DateTime.Now - start).Ticks;
             Console.WriteLine("{0}: {1}", name, spent);
         }
     }
