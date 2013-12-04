@@ -51,10 +51,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (another.EnemyLost != EnemyLost) return Better(EnemyLost - another.EnemyLost);
             if (another.UnitedDamage != UnitedDamage) return Better(UnitedDamage - another.UnitedDamage);
 
-            if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
-
             if (another.PotentiallyHeal != PotentiallyHeal) return Better(PotentiallyHeal - another.PotentiallyHeal);
             if (another.DangerIndex != DangerIndex) return Worse(DangerIndex - another.DangerIndex);
+            if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
 
             return 0;
         }
@@ -73,10 +72,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public override string ToString()
         {
-            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7}, danger = {8}",
+            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9}, danger = {8}",
                 OurLost,    EnemyLost,         OurDamage,      EnemyDamage, 
-                OurHeal,    EnemyDamageNHeal,  UnitedDamage,   F(PotentiallyHeal, "hea"), 
-                DangerIndex
+                OurHeal,    EnemyDamageNHeal,  UnitedDamage,   F(PotentiallyHeal, "hea"),
+                DangerIndex, F(LostMobility, "mob")
                 );
         }
 
@@ -89,6 +88,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             EnemyDamage = ChangeThisTurn.EnemyDamage;
             EnemyLost = ChangeThisTurn.EnemyLost;
             DangerIndex = ChangeThisTurn.DangerIndex;
+            LostMobility = ChangeThisTurn.LostMobility;
         }
     }
 
@@ -248,6 +248,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             var newLocation = battleCase.Self[battleCase.Self.Location];
             if (battleCase.Self.Warrior.IsMedic)
                 strategyChange3.PotentiallyHeal = battleCase.Allies.Select(a => a.Location.DistanceTo(oldLocation) - a.Location.DistanceTo(newLocation)).MaxOr(0);
+            var oldPosition = battleCase.Self.Warrior.Position;
+            var newPosition = battleCase.Self.Position;
+            strategyChange3.LostMobility = (oldPosition - newPosition);
+            if (battleCase.Enemies.Any(e => e.Alive && battleCase.Self.CanAttack(e)))
+                strategyChange3.LostMobility = 0;
+            if (newLocation.CanHideFromAttackSomehow)
+                strategyChange3.LostMobility = 0;
 
         }
 
@@ -424,7 +431,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     if (unit.CanComeAndThrowGrenade[0])
                     {
                         var canDoSteps = (unit.Warrior.MaxActions - unit.Warrior.Cost(ActionType.ThrowGrenade)) / unit.Warrior.Cost(ActionType.Move);
-                        var ways = unit.WaysToThrow.Where(w => w.Count() <= canDoSteps);
+                        var ways = unit.WaysToThrow.Where(w => w.Count() <= canDoSteps + 1);
                         foreach (var wayToThrow in ways)
                         {
                             battleCase.BeginCase();

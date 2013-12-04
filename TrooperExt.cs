@@ -109,7 +109,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int MaxActions
         {
-            get { return orig.InitialActionPoints; }
+            get { return orig.InitialActionPoints + (orig.IsTeammate ? 0 : FieldRationExtraPoints); }
         }
 
         public override int AttackRange

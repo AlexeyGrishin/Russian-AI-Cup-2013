@@ -57,17 +57,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return Tool.GetRadius(AttackRange).Contains(from.X - anotherWarrior.X, from.Y - anotherWarrior.Y);
         }
 
-        public bool CanTheoreticallySee(Warrior2 anotherWarrior)
-        {
-            return CanTheoreticallySee(anotherWarrior.Location.Point);
-        }
-
         public bool CanTheoreticallySee(PossibleMove anotherWarrior, PossibleMove from = null)
         {
             from = from ?? Location;
-            return Tool.GetRadius(VisionRange).Contains(Location.X - anotherWarrior.X, Location.Y - anotherWarrior.Y);
+            return Tool.GetRadius(VisionRange).Contains(from.X - anotherWarrior.X, from.Y - anotherWarrior.Y);
         }        
 
+        /// DANGERRR!!!
         public bool CanTheoreticallySee(Point anotherWarrior)
         {
             return Tool.GetRadius(VisionRange).Contains(Location.X - anotherWarrior.X, Location.Y - anotherWarrior.Y);
