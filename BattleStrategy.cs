@@ -66,7 +66,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 var allies = world.Troopers.Where(t => t.IsTeammate && t.Id != self.Id).ToList();
 
                 var battleCase3 = new BattleCase3<TrooperExt>(self.Ext(), world.ToMaze(), allies.Select(a => a.Ext()).ToList(), enemies.Select(a => a.Ext()).ToList());
-                battleCase3.Recalculate();
 
                 bool done = false;
                 var resolutions = new List<StrategyResult>();
@@ -82,9 +81,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 resolutions.Sort();
                 resolutions.Reverse();
                 var best = resolutions.FirstOrDefault(r => r.Possible);
+
+                List<StrategyResult3> resolutions3 = Battle.All3(battleCase3).ToList();
+                resolutions3.Sort();
+                resolutions3.Reverse();
+                var best3 = resolutions3.FirstOrDefault(r => r.Possible);
+
                 foreach (var battleCase in casesToLog)                                              //[DEBUG]
-                    Logger.Logger.Instance().LogBattle(battleCase.Item1, battleCase.Item2, resolutions, world, best, battleCase3);       //[DEBUG]
-                if (best != null)
+                    Logger.Logger.Instance().LogBattle(battleCase.Item1, battleCase.Item2, resolutions, world, best, battleCase3, resolutions3, best3);       //[DEBUG]
+                if (best3 != null)
+                {
+                    self.Ext().AddMoves(best3.Moves);
+                    done = true;
+                }
+                if (!done && best != null)
                 {
                     self.Ext().AddMoves(best.Moves);
                     done = true;

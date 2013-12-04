@@ -193,5 +193,56 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             });
             return allWaysToCheckpoint.FirstOrDefault();
         }
+
+        public static IEnumerable<IEnumerable<PossibleMove>> DistinctWays(IEnumerable<IEnumerable<PossibleMove>> ways, int maxSteps)
+        {
+            return ways.Where(w => w.Count() >= maxSteps).Select(w => w.Take(maxSteps)).Distinct(new WayComparer());
+        }
+
+        private static FakeTimer fake = new FakeTimer();
+
+        public static IDisposable Timer(string name)
+        {
+            return new Timer(name); //[DEBUG]
+            return fake;
+        }
+        
+    }
+
+    public class WayComparer : IEqualityComparer<IEnumerable<PossibleMove>>
+    {
+
+        public bool Equals(IEnumerable<PossibleMove> x, IEnumerable<PossibleMove> y)
+        {
+            return x.SequenceEqual(y);
+        }
+
+        public int GetHashCode(IEnumerable<PossibleMove> obj)
+        {
+            return obj.Select(p => p.X + p.Y).Sum();
+        }
+    }
+
+    public class Timer: IDisposable
+    {
+        private DateTime start;
+        private String name;
+
+        public Timer(String name)
+        {
+            this.name = name;
+            this.start = DateTime.Now;
+        }
+
+        public void Dispose()
+        {
+            var spent = (DateTime.Now - start).TotalMilliseconds;
+            Console.WriteLine("{0}: {1}", name, spent);
+        }
+    }
+
+    public class FakeTimer: IDisposable
+    {
+        public void Dispose() { }
     }
 }

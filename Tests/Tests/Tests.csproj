@@ -60,6 +60,7 @@
     <Compile Include="AI\FollowPointTest.cs" />
     <Compile Include="AI\TrooperExtTest.cs" />
     <Compile Include="AI\MapsTest.cs" />
+    <Compile Include="AI\BattleCase3Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

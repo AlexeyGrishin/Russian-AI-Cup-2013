@@ -128,7 +128,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
             builder.Append("]");
         }
 
-        private void LogBattle3(World world, BattleCase3<TrooperExt> battleCase3)
+        private void LogBattle3(World world, BattleCase3<TrooperExt> battleCase3, IEnumerable<StrategyResult3> results3, StrategyResult3 best3)
         {
             if (!battleLogged3)
             {
@@ -183,23 +183,27 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                 return c;
             }).ToArray()).ToArray(), builder);
             builder.Append(", troopers: [");
+            var first = true;
             foreach (var ally in battleCase3.All)
             {
-                builder.Append(", ");
+                if (!first) builder.Append(", ");
+                first = false;
                 LogTrooper(ally.Warrior.orig, builder);
             }
             builder.Append("]");
             builder.Append(", active: \"" + battleCase3.Self.Type + "\"");
             builder.Append(", log: [");
-            builder.Append(String.Join(",", battleCase3.All.Select(w => '"' + w.ToString().Replace("\n", "\\n") + '"')));
+            builder.Append('"' + (best3 == null ? "No best move" : best3.ToString2().Replace("\n", "\\n").Replace("\r", "")) + "\",'------',");
+            builder.Append(String.Join(",", results3.Select(r => "\"" + r.ToString2().Replace("\n", "\\n").Replace("\r","") + '"')));
             builder.Append("]}");
             System.IO.File.AppendAllText(String.Format("./Res/battle3-{0}.html", name), WrapStep(builder.ToString()));
 
         }
 
-        public void LogBattle(BattleCase2<TrooperExt> battleCase, IEnumerable<StrategyResult> results, IEnumerable<StrategyResult> allresults, World world, StrategyResult best, BattleCase3<TrooperExt> battleCase3)
+        public void LogBattle(BattleCase2<TrooperExt> battleCase, IEnumerable<StrategyResult> results, IEnumerable<StrategyResult> allresults, World world, 
+            StrategyResult best, BattleCase3<TrooperExt> battleCase3, IEnumerable<StrategyResult3> results3, StrategyResult3 best3)
         {
-            LogBattle3(world, battleCase3);
+            LogBattle3(world, battleCase3, results3, best3);
             if (!battleLogged)
             {
                 var b1 = new StringBuilder("[]");
@@ -209,10 +213,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                 System.IO.File.WriteAllText(String.Format("./Res/battle-{0}.html", name), WrapObserver(b1.ToString(), "steps"));
                 battleLogged = true;
             }
+            var battle2Move = String.Join(",", best.Moves.Select(m => m.AsString()));
+            var battle3Move = String.Join(",", best3.Moves.Select(m => m.AsString()));
+
+            var diff = !battle2Move.Equals(battle3Move);
 
             var builder = new StringBuilder();
             builder.Append("{name:\"");
-            builder.Append(battleCase.Self.orig.Type + "-" + MyStrategy.Turn + " / " + battleCase.Enemy.orig.Type);
+            builder.Append(battleCase.Self.orig.Type + "-" + MyStrategy.Turn + " / " + battleCase.Enemy.orig.Type + (diff ? " *** ": ""));
             builder.Append("\", data: ");
             LogMap(WalkableMap.Instance().ToArray().Select((row, x) => row.Select((cell, y) => {
                 var c = new Cell();
@@ -266,6 +274,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
             builder.Append(", active: \"" + battleCase.Self.orig.Type + "\"");
             builder.Append(", against: \"" + battleCase.Enemy.orig.Type + "\"");
             builder.Append(", log: [");
+            if (diff)
+            {
+                builder.Append("\"2: " + battle2Move + "\",");
+                builder.Append("\"3: " + battle3Move + "\",");
+                builder.Append("\"**************************\",");
+            }
             builder.Append('"' + (best == null ? "No best move" : best.ToString()) + "\",'------',");
             builder.Append(String.Join(",", allresults.Select(r => '"' + (results.Contains(r) ? " > " : "   ") + r.ToString() + '"')));
             builder.Append("]}");

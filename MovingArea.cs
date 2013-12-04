@@ -120,6 +120,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return Math.Abs(X - a.X) + Math.Abs(Y - a.Y);
         }
 
+        public long RealDistanceTo(PossibleMove a)
+        {
+            return (int)Math.Sqrt((X - a.X) * (X - a.X) + (Y - a.Y) * (Y - a.Y));
+        }
+
         public override bool Equals(object obj)
         {
             var pm = obj as PossibleMove;
@@ -148,7 +153,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             {
                 for (var y = 0; y < maze.Height; y++)
                 {
-                    map[x, y] = maze.IsFree(x, y) ? new PossibleMove { X = x, Y = y, DangerIndex = maze.DangerIndex(x, y) } : null;
+                    map[x, y] = maze.IsFree(x, y) ? new PossibleMove { X = x, Y = y, Step = -1, DangerIndex = maze.DangerIndex(x, y) } : null;
                 }
             }
         }

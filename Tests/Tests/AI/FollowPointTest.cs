@@ -57,7 +57,7 @@ namespace Tests.AI
                 "     ",
                 "     ",
                 "     "
-            });
+            }, action: (map, c, s, m) => map.BuildMapFrom(c, 20));
             SuggestMove(commander);
             AssertMove(commander, Direction.North);
 
@@ -71,7 +71,7 @@ namespace Tests.AI
                 "   ",
                 "   ",
                 "   "
-            });
+            }, action: (map, c, s, m) => map.BuildMapFrom(c, 20));
             SuggestMove(commander);
             AssertMove(commander, Direction.East);
             SuggestMove(commander);

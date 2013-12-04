@@ -179,17 +179,26 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         public static IList<StrategyResult> All<T>(BattleCase2<T> battleCase) where T : Warrior2
         {
-            var allCases = StrategiesFor<T>(battleCase).Select(s => Emulator2.Emulate(battleCase, s)).ToList();
+            var allCases = StrategiesFor<T>(battleCase.StepsToAttack, battleCase.Self.HasGrenade, battleCase.Self.IsMedic, battleCase.SickAlly != null).Select(s => Emulator2.Emulate(battleCase, s)).ToList();
             allCases.Sort();
             allCases.Reverse();
             Console.WriteLine(String.Join("\n\n", allCases.Select(a => a.ToString())));
             return allCases;
         }
 
-        private static List<IStrategy> StrategiesFor<T>(BattleCase2<T> battleCase) where T : Warrior2
+        public static IList<StrategyResult3> All3<T>(BattleCase3<T> battleCase) where T: Warrior2
+        {
+            var allCases = StrategiesFor<T>(battleCase.Self.StepsToAttack, battleCase.Self.Warrior.HasGrenade, battleCase.Self.Warrior.IsMedic, battleCase.SickAllies.Any()).Select(s => Emulator3.Emulate(battleCase, s)).ToList();
+            allCases.Sort();
+            allCases.Reverse();
+            Console.WriteLine(String.Join("\n\n", allCases.Select(a => a.ToString2())));
+            return allCases;
+        }
+
+        private static List<IStrategy> StrategiesFor<T>(int stepsToAttack, bool hasGrenade, bool isMedic, bool hasSickAlly) where T : Warrior2
         {
             var list = new List<IStrategy>();
-            if (battleCase.StepsToAttack == 0)
+            if (stepsToAttack == 0)
             {
                 Add(list, "just shoot",                 ActionDraft.Shoot);
                 Add(list, "shoot and go away",          ActionDraft.Shoot, ActionDraft.StepFromEnemy);
@@ -201,22 +210,22 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "shoot and kneel to hide", ActionDraft.Shoot, ActionDraft.OnKneel);
             }
 
-            Add(list, "come and shoot",             ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.Shoot);
+            Add(list, "come and shoot", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.Shoot);
             //if (battleCase.Self.Type == TrooperType.Sniper)
             {
                 Add(list, "kneel to hide", ActionDraft.OnKneel);
-                Add(list, "come and kneel", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.OnKneel);   //for sniper
-                Add(list, "come and lie down", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, battleCase.StepsToAttack), 5), ActionDraft.LieDown);   //for sniper
+                Add(list, "come and kneel", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.OnKneel);   //for sniper
+                Add(list, "come and lie down", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.LieDown);   //for sniper
             }
             Add(list, "step away and shoot", ActionDraft.StepFromEnemy, 1, 1, ActionDraft.Shoot);
-            if (battleCase.Self.HasGrenade)
+            if (hasGrenade)
             {
                 Add(list, "come and throw grenade", ActionDraft.StepToEnemy, 0, 3, ActionDraft.ThrowGrenade);
             }
             Add(list, "go to enemy", ActionDraft.StepToEnemy, 1, 5);
             Add(list, "go away from enemy", ActionDraft.StepFromEnemy, 1, 5);
             Add(list, "stand still", ActionDraft.Skip);
-            if (battleCase.Self.IsMedic && battleCase.SickAlly != null)
+            if (isMedic && hasSickAlly)
             {
                 Add(list, "heal sick", ActionDraft.HealAlly);
                 Add(list, "heal sick", ActionDraft.StepToSickAlly, 0, 5, ActionDraft.HealAlly);
@@ -751,6 +760,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
     {
         public abstract string Name { get; }
         public abstract List<ActionDraft> Actions { get; }
+        public int StepsCount { get { return Actions.Count(a => a == ActionDraft.StepToEnemy || a == ActionDraft.StepToSickAlly || a == ActionDraft.StepFromEnemy || a == ActionDraft.StepToThrow); } }
     }
 
     public class Strategy: IStrategy

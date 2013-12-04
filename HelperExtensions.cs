@@ -23,7 +23,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             foreach (var o in source) action(o);
         }
-
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        {
+            source.Select<T, int>((t, idx) => { action(t, idx); return idx; }).ToList();
+        }
         public static string AsString(this IEnumerable<PossibleMove> source, Func<PossibleMove, string> toString = null)
         {
             return String.Join(" -> ", source.Select(m => String.Format("[{0},{1}]({2})", m.X, m.Y, (toString == null ? m.ToString() : toString(m)))));

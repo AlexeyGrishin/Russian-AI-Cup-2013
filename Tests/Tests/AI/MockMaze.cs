@@ -226,9 +226,10 @@ namespace Tests.AI
             get { return 3; }
         }
 
+        public int AMedicHelp = 30;
         public override int MedicHealth
         {
-            get { return 30; }
+            get { return AMedicHelp; }
         }
 
         public TrooperType AType { get; set; }
@@ -237,9 +238,10 @@ namespace Tests.AI
         public int AVisionRange { get; set; }
         public override int VisionRange { get { return AVisionRange; } }
 
+        public bool ATeammate = true;
         public override bool IsTeammate
         {
-            get { return true; }
+            get { return ATeammate; }
         }
     }
 

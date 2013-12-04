@@ -62,8 +62,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return CanTheoreticallySee(anotherWarrior.Location.Point);
         }
 
-        public bool CanTheoreticallySee(PossibleMove anotherWarrior)
+        public bool CanTheoreticallySee(PossibleMove anotherWarrior, PossibleMove from = null)
         {
+            from = from ?? Location;
             return Tool.GetRadius(VisionRange).Contains(Location.X - anotherWarrior.X, Location.Y - anotherWarrior.Y);
         }        
 
