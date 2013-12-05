@@ -43,7 +43,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 
         public static IList<StrategyResult3> All3<T>(BattleCase3<T> battleCase) where T: Warrior2
         {
-            var allCases = StrategiesFor<T>(battleCase.Self.StepsToAttack, battleCase.Self.Warrior.HasGrenade, battleCase.Self.Warrior.IsMedic, battleCase.SickAllies.Any()).Select(s => Emulator3.Emulate(battleCase, s)).ToList();
+            var allCases = StrategiesFor<T>(battleCase.Self.StepsToAttack, battleCase.Self.Warrior.HasGrenade, battleCase.Self.Warrior.CanHeal, battleCase.SickAllies.Any()).Select(s => Emulator3.Emulate(battleCase, s)).ToList();
             allCases.Sort();
             allCases.Reverse();
             Console.WriteLine(String.Join("\n\n", allCases.Select(a => a.ToString2())));

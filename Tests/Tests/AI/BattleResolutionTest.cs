@@ -163,6 +163,23 @@ namespace Tests.AI
         }
 
         [TestMethod]
+        public void Test_Heal_With_Medkit()
+        {
+            var maze = new DumbMaze();
+            var MA = WalkableMap.Create(maze);
+            var selfLoc = MA.BuildMapFrom(Point.Get(1, 0), 10);
+            var enemyLoc = MA.Get(8, 0);
+            var allyLoc = MA.Get(1, 1);
+            var self = new Warrior2Mock { AHasMedkit = true, AIsMedic = true, AActions = 12, ADamage = 3, AHitpoints = 50, AAttackRange = 5, ALocation = selfLoc, AType = TrooperType.FieldMedic, AVisionRange = 10, AMedicHelp = 6 };
+            var enemy = new Warrior2Mock { AActions = 12, ADamage = 5, AHitpoints = 80, AAttackRange = 6, ALocation = enemyLoc, ATeammate = false, AVisionRange = 10 };
+            var ally = new Warrior2Mock { AActions = 12, ADamage = 40, AHitpoints = 20, AAttackRange = 6, ALocation = allyLoc, AVisionRange = 10 };
+            var battle = new BattleCase3<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { ally });
+            var resolution = Battle.All3(battle);
+            CollectionAssert.AreEqual(new List<ActionType> { ActionType.UseMedikit, ActionType.Heal, ActionType.Heal, ActionType.Heal, ActionType.Heal, ActionType.Heal }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
+
+        }
+
+        [TestMethod]
         public void Test_Heal_near()
         {
             var maze = new DumbMaze();
