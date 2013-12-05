@@ -400,9 +400,7 @@ namespace Tests.AI
             var self = new Warrior2Mock { AType = TrooperType.FieldMedic, AActions = 12, ADamage = 9, AHitpoints = 100, AAttackRange = 5, ALocation = selfLoc, AVisionRange = 10 };
             var sol = new Warrior2Mock { AType = TrooperType.Soldier, AActions = 12, ADamage = 25, AHitpoints = 120, AAttackRange = 5, ALocation = solLoc, AHasGrenade = true, AVisionRange = 10 };
             var enemy = new Warrior2Mock { AType = TrooperType.Soldier, ATeammate = false, AActions = 10, ADamage = 15, AHitpoints = 60, AAttackRange = 7, ALocation = enemyLoc, AHasGrenade = true, AVisionRange = 10 };
-            var battle = new BattleCase2<Warrior2Mock>(self, enemy, maze, new[] { sol });
             var battle3 = new BattleCase3<Warrior2Mock>(self, maze, new[] { sol }, new Warrior2Mock[] { enemy });
-            var resolution = Battle.All(battle);
             Console.WriteLine();
             var resolution3 = Battle.All3(battle3);
         }
