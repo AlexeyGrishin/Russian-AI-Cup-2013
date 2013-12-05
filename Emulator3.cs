@@ -518,7 +518,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (battleCase.SickAllies.All(a => a.Location.DistanceTo(battleCase.Self.Location) > 1)) return sr.SetImpossible("Cannot heal - distance > 1");
             if (!battleCase.Self.Warrior.Can(ActionType.Heal, 1, points)) return sr.SetImpossible("Not enough points to just heal once");
             var sickAllyNear = battleCase.SickAllies.Where(a => a.Location.DistanceTo(battleCase.Self.Location) <= 1).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
-            if (hasMedkit && battleCase.Self.Warrior.Can(ActionType.UseMedikit, 1, points))
+            if (hasMedkit && battleCase.Self.Warrior.DoIfCan(ActionType.UseMedikit, ref points))
             {
                 sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = sickAllyNear.Location.X, Y = sickAllyNear.Location.Y });
                 sickAllyNear.Healed += battleCase.Self.Warrior.GetMedkitHealth(sickAllyNear.Warrior);
