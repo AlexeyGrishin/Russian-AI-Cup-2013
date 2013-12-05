@@ -165,13 +165,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             }
             state.Location = battleMap[Location];
             var alliesAndSelf = allies.Concat(new List<BattleWarrior3<T>> {this}).ToList();
-            int a = 0, b = 0;
             state.Location.ForEach(p =>
             {
-                b++;
                 if (p.Step <= analysisRange)
                 {
-                    a++;
                     p.VisibleToEnemy = enemies.Any(e => e.warrior.CanTheoreticallySee(p) && maze.CanAttack(e, p, Position));
                     p.CanBeAttackedOnStand = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Standing));
                     p.CanBeAttackedOnKneel = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Kneeling));
@@ -187,7 +184,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     PredictSniper(p, alliesAndSelf);
                 }
             });
-            Console.WriteLine(a + ", " + b);
             BuildAttackingProps(allies, enemies);
             if (IsTeammate) BuildDefendingProps(allies, enemies);
         }

@@ -54,6 +54,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AI\MockMaze.cs" />
+    <Compile Include="AI\Tool.cs" />
     <Compile Include="AI\ToolTest.cs" />
     <Compile Include="AI\BattleResolutionTest.cs" />
     <Compile Include="AI\BattleCase2Test.cs" />
