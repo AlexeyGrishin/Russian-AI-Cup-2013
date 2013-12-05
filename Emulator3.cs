@@ -18,6 +18,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public int PotentiallyHeal = 0;
         public int LostMobility = 0;
         public int DangerIndex = 0;
+        public int ReadyToAttack = 0;
 
         public int CountOfInvisibleSnipersO_o = 0;
 
@@ -56,6 +57,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (another.CountOfInvisibleSnipersO_o != CountOfInvisibleSnipersO_o) return Worse(CountOfInvisibleSnipersO_o - another.CountOfInvisibleSnipersO_o);
             if (another.PotentiallyHeal != PotentiallyHeal) return Better(PotentiallyHeal - another.PotentiallyHeal);
             if (another.DangerIndex != DangerIndex) return Worse(DangerIndex - another.DangerIndex);
+            if (another.ReadyToAttack != ReadyToAttack) return Better(ReadyToAttack - another.ReadyToAttack);
             if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
 
             return 0;
@@ -75,10 +77,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public override string ToString()
         {
-            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9}, danger = {8}, O_o = {10}",
+            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9} {11}, danger = {8}, O_o = {10}",
                 OurLost,    EnemyLost,         OurDamage,      EnemyDamage, 
                 OurHeal,    EnemyDamageNHeal,  UnitedDamage,   F(PotentiallyHeal, "hea"),
-                DangerIndex, F(LostMobility, "mob"), CountOfInvisibleSnipersO_o
+                DangerIndex, F(-LostMobility, "mob"), CountOfInvisibleSnipersO_o, F(ReadyToAttack, "atk")
                 );
         }
 
@@ -254,11 +256,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             var newLocation = battleCase.Self[battleCase.Self.Location];
             if (battleCase.Self.Warrior.CanHeal)
                 strategyChange3.PotentiallyHeal = battleCase.Allies.Select(a => a.Location.DistanceTo(oldLocation) - a.Location.DistanceTo(newLocation)).MaxOr(0);
-            var oldPosition = battleCase.Self.Warrior.Position;
-            var newPosition = battleCase.Self.Position;
+            var oldPosition = battleCase.Self.Warrior.Position;//2
+            var newPosition = battleCase.Self.Position;//0
             strategyChange3.LostMobility = (oldPosition - newPosition);
             if (battleCase.Enemies.Any(e => e.Alive && battleCase.Self.CanAttack(e)))
+            {
                 strategyChange3.LostMobility = 0;
+                if (!oldLocation.CanAttackFromHere)
+                    strategyChange3.ReadyToAttack = 0;
+            }
             if (newLocation.CanHideFromAttackSomehow)
                 strategyChange3.LostMobility = 0;
             if (battleCase.Self.CountOfInvisibleSnipers > 0)
@@ -413,17 +419,25 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 {
                     battleCase.Recalculate(unit, quick: true);
                 }
+                var maxPointsWithRation = unit.Warrior.MaxActions + (unit.Warrior.HasFieldRation ? unit.Warrior.FieldRationExtraPoints : 0);
+                int pointsBeforeMove = (TrooperStance.Standing - unit.Position) * unit.Warrior.Cost(ActionType.RaiseStance);
+
                 var cases = new List<BattleCase3State>();
                 //using (Tool.Timer("...cases "))
+                //TODO: for moves - analyze position of enemy. If Prone/Kneeling - let them stand up
                 {
                     for (var wl = 0; wl <= MyStrategy.MaxStepsEnemyWillDo; wl++)
                     {
                         var waysToTry = wl == 0 ? new List<IEnumerable<PossibleMove>> { new[] { unit.Location } } : Tool.DistinctWays(unit.WaysToAttack, wl + 1);
                         foreach (var way in waysToTry)
                         {
-                            var enemyPoints = unit.Warrior.MaxActions;
+                            var enemyPoints = maxPointsWithRation;
                             var wayLength = way.Count() - 1;
-                            if (!unit.Warrior.DoIfCan(ActionType.Move, wayLength, ref enemyPoints)) continue;
+                            if (wayLength > 0)
+                            {
+                                enemyPoints -= pointsBeforeMove;
+                                if (!unit.Warrior.DoIfCan(ActionType.Move, wayLength, ref enemyPoints)) continue;
+                            }
                             battleCase.BeginCase();
                             unit.Location = way.Last();
                             var attackedUnits = new List<BattleWarrior3<T>>();
@@ -444,22 +458,32 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     }
                     if (unit.CanComeAndThrowGrenade[0])
                     {
-                        var canDoSteps = (unit.Warrior.MaxActions - unit.Warrior.Cost(ActionType.ThrowGrenade)) / unit.Warrior.Cost(ActionType.Move);
+                        var pointsToMove = Math.Max(0, maxPointsWithRation - unit.Warrior.Cost(ActionType.ThrowGrenade) - pointsBeforeMove);
+
+                        var canDoSteps = pointsToMove / unit.Warrior.Cost(ActionType.Move);
                         var ways = unit.WaysToThrow.Where(w => w.Count() <= canDoSteps + 1);
                         foreach (var wayToThrow in ways)
                         {
-                            battleCase.BeginCase();
                             unit.Location = wayToThrow.Last();
-                            var damagedDirectly = battleCase.GetEnemiesFor(unit).Where(a => a.Alive && unitsToTurn.Any(al => a.CanSee(a)) && a.Location.RealDistanceTo(unit.Location) <= unit.Warrior.GrenadeRange).OrderBy(a => a.Hitpoints).FirstOrDefault();
-                            //TODO: near points
-                            if (damagedDirectly != null)
+                            var pointsToBeAttacked = new List<PossibleMove>();
+                            var myEnemies = battleCase.GetEnemiesFor(unit).ToList();
+                            myEnemies.Select(e => e.BattleMap.PointsAround(e.Location).Concat(new[] { e.Location })).ForEach(p => pointsToBeAttacked.AddRange(p));
+                            pointsToBeAttacked = pointsToBeAttacked.Where(p => p.RealDistanceTo(unit.Location) <= unit.Warrior.GrenadeRange).ToList();
+                            foreach (var grenadeTarget in pointsToBeAttacked)
                             {
-                                damagedDirectly.Damage += unit.Warrior.GetGrenadeDamage(0);
-                                cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wayToThrow.Count() + " steps and throw grenade"));
-                            }
-                            else
-                            {
-                                battleCase.EndCase();
+                                battleCase.BeginCase();
+                                var affectedEnemies = myEnemies.Where(w => w.Location.DistanceTo(grenadeTarget) <= 1);
+
+                                if (affectedEnemies.Any())
+                                {
+                                    affectedEnemies.ForEach(w => w.Damage += unit.Warrior.GetGrenadeDamage(w.Location.DistanceTo(grenadeTarget)));
+                                    cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wayToThrow.Count() + " steps and throw grenade to " + grenadeTarget.Point + ", attacking " + String.Join(",", affectedEnemies.Select(a => a.ShortString()))));
+                                }
+                                else
+                                {
+                                    battleCase.EndCase();
+                                }
+
                             }
                         }
                     }

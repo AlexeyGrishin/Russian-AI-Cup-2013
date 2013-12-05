@@ -16,7 +16,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static long PlayerId = -1;
         public static bool? AreThereSnipers = null;
 
-        public static int NeedHeeling = 60;
+        public static int NeedHeeling = 80;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
         public static double OurEnemyDamageCoeff = 1.2;
@@ -26,6 +26,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int MinDistanceToTeamInBattle = 3;
         public static int MaxStepsEnemyWillDo = 2;
         public static double NotStandingDamageCoeff = 0.5;
+
+        public static void Break(int turn, TrooperType type)
+        {
+            if (Turn == turn && Self == type)
+            {
+                var a = 6;
+            }
+        }
 
 
 
@@ -58,10 +66,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     BS.CancelSteps(self);
 
                 }
-                if (!move.IsMade() && self.Ext().Can(ActionType.RaiseStance) && self.Stance != TrooperStance.Standing)
-                {
-                    move.Action = ActionType.RaiseStance;
-                }
 
                 if (!move.IsMade() && self.Ext().IsSick && self.IsHoldingMedikit && self.Ext().Can(ActionType.UseMedikit))
                 {
@@ -70,6 +74,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 if (!inBattle)
                 {
+                    if (!move.IsMade() && self.Ext().Can(ActionType.RaiseStance) && self.Stance != TrooperStance.Standing)
+                    {
+                        move.Action = ActionType.RaiseStance;
+                    }
                     self.Ext().SaveHitpoints();
                     if (!move.IsMade() && self.Type != TrooperType.FieldMedic && self.Ext().IsABitSick && world.Troopers.Where(t => t.IsTeammate && t.Type == TrooperType.FieldMedic).Any(t => t.GetDistanceTo(self) <= 1))
                     {

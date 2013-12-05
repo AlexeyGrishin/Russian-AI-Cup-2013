@@ -170,6 +170,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 if (p.Step <= analysisRange)
                 {
                     p.VisibleToEnemy = enemies.Any(e => e.warrior.CanTheoreticallySee(p) && maze.CanAttack(e, p, Position));
+                    //TODO: точки где мы стояли до этого - считаем всегда "видимыми"
                     p.CanBeAttackedOnStand = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Standing));
                     p.CanBeAttackedOnKneel = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Kneeling));
                     p.CanBeAttackedOnProne = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Prone));
@@ -389,9 +390,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public BattleWarrior3State[] Allies { get; set; }
         public BattleWarrior3State[] Enemies { get; set; }
-
-        public int AlliesDamage { get { return Allies.Sum(a => a.Damage); } }
-        public int EnemiesDamage { get { return Enemies.Sum(e => e.Damage); } }
+        public readonly static int DeadDamageBonus = 50;
+        public int AlliesDamage { get { return Allies.Sum(a => a.Damage + (a.Alive ? 0 : DeadDamageBonus)); } }
+        public int EnemiesDamage { get { return Enemies.Sum(e => e.Damage + (e.Alive ? 0 : DeadDamageBonus)); } }
 
         public override string ToString()
         {

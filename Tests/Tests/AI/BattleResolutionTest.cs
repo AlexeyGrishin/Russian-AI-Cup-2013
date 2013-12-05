@@ -153,7 +153,7 @@ namespace Tests.AI
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 10);
             var enemyLoc = MA.Get(6, 0);
             var allyLoc = MA.Get(2, 1);
-            var self = new Warrior2Mock { AIsMedic = true, AActions = 12, ADamage = 3, AHitpoints = 70, AAttackRange = 5, ALocation = selfLoc, AType = TrooperType.FieldMedic, AVisionRange = 10, AMedicHelp = 6 };
+            var self = new Warrior2Mock { AIsMedic = true, AActions = 12, ADamage = 3, AHitpoints = 90, AAttackRange = 5, ALocation = selfLoc, AType = TrooperType.FieldMedic, AVisionRange = 10, AMedicHelp = 6 };
             var enemy = new Warrior2Mock { AActions = 12, ADamage = 5, AHitpoints = 80, AAttackRange = 6, ALocation = enemyLoc, ATeammate = false, AVisionRange = 10 };
             var ally = new Warrior2Mock { AActions = 12, ADamage = 40, AHitpoints = 50, AAttackRange = 6, ALocation = allyLoc, AVisionRange = 10 };
             var battle = new BattleCase3<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { ally });
@@ -205,7 +205,7 @@ namespace Tests.AI
             var selfLoc = MA.BuildMapFrom(Point.Get(0, 0), 30);
             var enemyLoc = MA.Get(20, 0);
             var allyLoc = MA.Get(18, 1);
-            var self = new Warrior2Mock { AIsMedic = true, AActions = 6, ADamage = 3, AHitpoints = 70, AAttackRange = 5, ALocation = selfLoc, AVisionRange = 10, AType = TrooperType.FieldMedic };
+            var self = new Warrior2Mock { AIsMedic = true, AActions = 6, ADamage = 3, AHitpoints = 90, AAttackRange = 5, ALocation = selfLoc, AVisionRange = 10, AType = TrooperType.FieldMedic };
             var enemy = new Warrior2Mock { AActions = 12, ADamage = 5, AHitpoints = 80, AAttackRange = 6, ALocation = enemyLoc, AVisionRange = 10, ATeammate = false };
             var ally = new Warrior2Mock { AActions = 12, ADamage = 40, AHitpoints = 50, AAttackRange = 6, ALocation = allyLoc, AVisionRange = 10 };
             var battle = new BattleCase3<Warrior2Mock>(self, enemy, maze, new List<Warrior2Mock> { ally });

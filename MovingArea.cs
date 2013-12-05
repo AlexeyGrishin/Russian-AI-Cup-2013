@@ -321,7 +321,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public int Width { get { return map.GetLength(0); } }
         public int Height { get { return map.GetLength(1); } }
 
-        private List<PossibleMove> PointsAround(PossibleMove move)
+        public List<PossibleMove> PointsAround(PossibleMove move)
         {
             int[] dxes = new int[] { -1, 0, 1, 0 };
             int[] dyes = new int[] { 0, -1, 0, 1 };

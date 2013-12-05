@@ -109,7 +109,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 
         public override int MaxActions
         {
-            get { return orig.InitialActionPoints + (orig.IsHoldingFieldRation ? FieldRationExtraPoints : 0); }
+            get { return orig.InitialActionPoints; }
         }
 
         public override int AttackRange

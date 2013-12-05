@@ -45,7 +45,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
         {
             if (mapLogged) return;
             var mapName = LogMapTxt(map);
-            LogMapVisibility(map, mapName);
+            //LogMapVisibility(map, mapName);
         }
 
         private void LogMapVisibility(World map, string mapName)
@@ -80,7 +80,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                 builder.AppendLine();
             }
             var mapName = givenName ? name : String.Join("_", map.Cells.Select(c => c.Count(cell => cell == CellType.Free) + ""));
-            System.IO.File.WriteAllText(String.Format("./Res/map-{0}.txt", mapName), builder.ToString());
+            //System.IO.File.WriteAllText(String.Format("./Res/map-{0}.txt", mapName), builder.ToString());
             return mapName;
         }
 
