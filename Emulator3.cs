@@ -288,11 +288,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             int points = battleCase.Self.Warrior.Actions;
             var actions = strategy.Actions.ToList();
             var hasRation = battleCase.Self.Warrior.HasFieldRation;
+            var hasMedkit = battleCase.Self.Warrior.HasMedkit;
             var self = battleCase.Self;
             if (self.Warrior.IsSick && self.Warrior.HasMedkit && self.Warrior.DoIfCan(ActionType.UseMedikit, ref points))
             {
                 sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = battleCase.Self.Location.X, Y = battleCase.Self.Location.Y });
                 self.Healed += self.Warrior.MedkitHealth;
+                hasMedkit = false;
             }
             int distance = 0, overallDistance = 0;
             //
@@ -339,15 +341,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 else if (action == ActionDraft.HealAlly)
                 {
                     if (!battleCase.Self.Warrior.CanHeal) return sr.SetImpossible("Unit is not a medic and does not have medkit!");
-                    if (!Heal(sr, battleCase, ref points, ref hasRation)) return false;
+                    if (!Heal(sr, battleCase, ref points, ref hasRation, ref hasMedkit)) return false;
                 }
                 else if (action == ActionDraft.HealSelf)
                 {
                     //TODO: reduce .Warrior calls - wrap...
-                    if (!self.Warrior.HasMedkit) return sr.SetImpossible("Unit does not have medkit!");
+                    if (!hasMedkit) return sr.SetImpossible("Unit does not have medkit!");
                     if (!self.Warrior.DoIfCan(ActionType.UseMedikit, ref points)) return sr.SetImpossible(String.Format("Cannot use medkit - not enough points({0})", points));
                     sr.Moves.Add(new Move { Action = ActionType.UseMedikit });
                     self.Healed += battleCase.Self.Warrior.MedicHealth;
+                    hasMedkit = false;
                 }
                 else if (action == ActionDraft.ThrowGrenade)
                 {
@@ -510,16 +513,17 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         }
 
-        private static bool Heal<T>(StrategyResult3 sr, BattleCase3<T> battleCase, ref int points, ref bool hasRation) where T : Warrior2
+        private static bool Heal<T>(StrategyResult3 sr, BattleCase3<T> battleCase, ref int points, ref bool hasRation, ref bool hasMedkit) where T : Warrior2
         {
             if (battleCase.SickAllies.All(a => a.Location.DistanceTo(battleCase.Self.Location) > 1)) return sr.SetImpossible("Cannot heal - distance > 1");
             if (!battleCase.Self.Warrior.Can(ActionType.Heal, 1, points)) return sr.SetImpossible("Not enough points to just heal once");
             var sickAllyNear = battleCase.SickAllies.Where(a => a.Location.DistanceTo(battleCase.Self.Location) <= 1).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
-            if (battleCase.Self.Warrior.HasMedkit && battleCase.Self.Warrior.Can(ActionType.UseMedikit, 1, points))
+            if (hasMedkit && battleCase.Self.Warrior.Can(ActionType.UseMedikit, 1, points))
             {
                 sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = sickAllyNear.Location.X, Y = sickAllyNear.Location.Y });
                 sickAllyNear.Healed += battleCase.Self.Warrior.GetMedkitHealth(sickAllyNear.Warrior);
                 ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
+                hasMedkit = false;
             }
             while (battleCase.Self.Warrior.IsMedic && battleCase.Self.Warrior.DoIfCan(ActionType.Heal, ref points))
             {
