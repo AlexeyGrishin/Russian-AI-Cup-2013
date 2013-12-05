@@ -30,13 +30,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var middleOfWall = wayToIt.ElementAt(wayToIt.Count() / 2);
             var middleWayToCenter = Point.Get((middleOfWall.X + center.X)/2, (middleOfWall.Y + center.Y)/2);
             checkPoints = new List<Point>(5);
-            checkPoints.Add(nearestCorner);
             checkPoints.Add(middleOfWall.Point);
             checkPoints.Add(center);
             checkPoints.Add(oneOfCorners);
             checkPoints.Add(oppositeCorner);
             checkPoints.Add(center);
             checkPoints.AddRange(otherCorners.Where(c => c != oneOfCorners));
+            checkPoints.Add(nearestCorner);
         }
 
         private List<Point> checkPoints;

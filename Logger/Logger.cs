@@ -128,7 +128,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
             builder.Append("]");
         }
 
-        private void LogBattle3(World world, BattleCase3<TrooperExt> battleCase3, IEnumerable<StrategyResult3> results3, StrategyResult3 best3)
+        public void LogBattle3(World world, BattleCase3<TrooperExt> battleCase3, IEnumerable<StrategyResult3> results3, StrategyResult3 best3)
         {
             if (!battleLogged3)
             {
@@ -166,6 +166,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Logger
                     {
                         c.Class = cell.Step == -1 ? "empty" : "";
                         c.Text = (cell.DangerIndex == 0 || cell.DangerIndex == 500) ? "" : cell.DangerIndex + "";
+                        if (cell.PossibleSniper) { c.Class = " possible_sniper"; c.Text = "r?"; }
                     }
                     if (cell.CanBeAttackedOnStand) c.Class += " attacked";
                     if (cell.CanBeAttackedOnStand && !cell.CanBeAttackedOnKneel) c.Class += " safe_on_kneel";

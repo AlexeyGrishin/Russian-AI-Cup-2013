@@ -41,6 +41,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 //if (Hitpoints > 100) healed -= (Hitpoints - 100);
             }
         }
+
+        public int RealDamage
+        {
+            get { return Hitpoints < 0 ? Damage + Hitpoints : Damage; }
+        }
+
         public int InitialHitpoints { get; set; }
         public int Hitpoints { get { return InitialHitpoints - Damage + Healed; } }
         public bool Alive { get { return Hitpoints > 0; } }
@@ -89,6 +95,18 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             return maze.CanAttack(this, anotherWarrior) && this.warrior.CanTheoreticallySee(anotherWarrior.Location, from: Location);
         }
 
+        public bool CanSee(PossibleMove move, TrooperStance enemyPosition)
+        {
+            return maze.CanAttack(Location.X, Location.Y, (TrooperStance)Math.Min((int)enemyPosition, (int)Position), move.X, move.Y) && this.warrior.CanTheoreticallySee(move, from: Location);
+        }
+
+
+        public bool CouldSee(PossibleMove move, TrooperStance enemyPosition)
+        {
+            return maze.CanAttack(warrior.Location.X, warrior.Location.Y, (TrooperStance)Math.Min((int)enemyPosition, (int)warrior.Position), move.X, move.Y) && this.warrior.CanTheoreticallySee(move, from: warrior.Location);
+        }
+
+
         private void DefineDangerIndex(BattleWarrior3<T> self, PossibleMove move, TrooperStance ourStance, IEnumerable<BattleWarrior3<T>> alliesAndSelf)
         {
             /*if (move.CanBeAttackedSomehow)
@@ -96,7 +114,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 move.DangerIndex = 500;
                 return;  //does not make sense - we know this point is dangerous enough
             }*/
-            var maxAttackRange = 10;
+            var maxAttackRange = 12;
             var dangerIndex = 0;
             var maxAttackRadius = Tool.GetRadius(maxAttackRange);
             for (var dx = -maxAttackRange; dx <= maxAttackRange; dx++)
@@ -112,29 +130,72 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                             dangerIndex++;
                         }
                     }
-                    //TODO: reverse index - point that could be attacked by us
                 }
             }
             move.DangerIndex = dangerIndex; ;
         }
 
+        private void PredictSniper(PossibleMove move, IEnumerable<BattleWarrior3<T>> alliesAndSelf)
+        {
+            var stancesToCheck = new[] { TrooperStance.Standing, TrooperStance.Kneeling, TrooperStance.Prone };
+            move.PossibleSniper = stancesToCheck.Any(s =>
+            {
+                var seeSniper = alliesAndSelf.Any(a => a.CanSee(move, s) || a.CouldSee(move, s));
+                var sniperRadius = Tool.GetRadius(MyStrategy.SniperRangeFor(s));
+                return !seeSniper && alliesAndSelf.Any(a =>
+                    maze.CanAttack(move, a, s) &&
+                    sniperRadius.Contains(a.Location.X - move.X, a.Location.Y - move.Y)
+                    );
+            });
+
+        }
+
         private void BuildWays(Func<PossibleMove, bool> exclude, IEnumerable<BattleWarrior3<T>> allies, IEnumerable<BattleWarrior3<T>> enemies, bool quick)
         {
+            bool snipersInKnownEnemies = enemies.Any(e => e.Type == TrooperType.Sniper);
+            var scaryForSnipers = MyStrategy.AreThereSnipers.GetValueOrDefault(false) && !snipersInKnownEnemies;
+            var observeRange = quick ? warrior.AbsoluteMaxSteps : warrior.AbsoluteMaxSteps * 2;
+            var analysisRange = observeRange;
+            var dangerIndexingRange = observeRange;
             if (battleMap[Location].Step != 0 || IsTeammate)
-                battleMap.BuildMapFrom(Location.Point, !quick ? (int)(warrior.AbsoluteMaxSteps * 2) : warrior.AbsoluteMaxSteps, (p) => !maze.IsFree(p.X, p.Y) || exclude(p));
+            {
+                if (scaryForSnipers && IsDetector(allies))
+                    observeRange = Math.Max(12, observeRange);  //12 = max sniper range
+                battleMap.BuildMapFrom(Location.Point, observeRange, (p) => !maze.IsFree(p.X, p.Y) || exclude(p));
+            }
             state.Location = battleMap[Location];
             var alliesAndSelf = allies.Concat(new List<BattleWarrior3<T>> {this}).ToList();
+            int a = 0, b = 0;
             state.Location.ForEach(p =>
             {
-                p.VisibleToEnemy = enemies.Any(e => e.warrior.CanTheoreticallySee(p) && maze.CanAttack(e, p, Position));
-                p.CanBeAttackedOnStand = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Standing));
-                p.CanBeAttackedOnKneel = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Kneeling));
-                p.CanBeAttackedOnProne = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Prone));
-                p.CanAttackFromHere = enemies.Any(e => warrior.CanTheoreticallyAttack(e.Location, from: p) && maze.CanAttack(p, e, Position));
-                if (!quick) DefineDangerIndex(this, p, this.Position, alliesAndSelf);
+                b++;
+                if (p.Step <= analysisRange)
+                {
+                    a++;
+                    p.VisibleToEnemy = enemies.Any(e => e.warrior.CanTheoreticallySee(p) && maze.CanAttack(e, p, Position));
+                    p.CanBeAttackedOnStand = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Standing));
+                    p.CanBeAttackedOnKneel = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Kneeling));
+                    p.CanBeAttackedOnProne = enemies.Any(e => e.warrior.CanTheoreticallyAttack(p) && maze.CanAttack(e, p, TrooperStance.Prone));
+                    p.CanAttackFromHere = enemies.Any(e => warrior.CanTheoreticallyAttack(e.Location, from: p) && maze.CanAttack(p, e, Position));
+                }
+                if (!quick && p.Step <= dangerIndexingRange)
+                {
+                    DefineDangerIndex(this, p, this.Position, alliesAndSelf);
+                }
+                if (scaryForSnipers)
+                {
+                    PredictSniper(p, alliesAndSelf);
+                }
             });
+            Console.WriteLine(a + ", " + b);
             BuildAttackingProps(allies, enemies);
             if (IsTeammate) BuildDefendingProps(allies, enemies);
+        }
+
+        private bool IsDetector(IEnumerable<BattleWarrior3<T>> allies)
+        {
+            if (allies.Count() == 0) return false;
+            return warrior.VisionRange > allies.Max(m => m.Warrior.VisionRange);
         }
 
         private void BuildAttackingProps(IEnumerable<BattleWarrior3<T>> allies, IEnumerable<BattleWarrior3<T>> enemies)
@@ -161,6 +222,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 WaysToThrow = new List<IEnumerable<PossibleMove>>();
                 CanComeAndThrowGrenade = new bool[] {false, false};
             }
+
+            if (IsDetector(allies))
+            {
+                CountOfInvisibleSnipers = Location.Where(a => a.PossibleSniper).Count();
+                WaysToScout = Location.Where(a => a.PossibleSniper).Select(a => a.PathToThis());
+            }
+            else
+            {
+                CountOfInvisibleSnipers = 0;
+                WaysToScout = new List<IEnumerable<PossibleMove>>();
+            }
+
+
             
             //16. ability to shoot right from here
             CanAttackFromHere = state.Location.CanAttackFromHere;
@@ -206,6 +280,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public IEnumerable<IEnumerable<PossibleMove>> WaysToHide { get; private set; }
         public IEnumerable<IEnumerable<PossibleMove>> WaysToHeal { get; private set; }
         public IEnumerable<IEnumerable<PossibleMove>> WaysToThrow { get; private set; }
+        public IEnumerable<IEnumerable<PossibleMove>> WaysToScout { get; private set; }
+
+        public int CountOfInvisibleSnipers = 0;
 
 
         public override string ToString()
@@ -251,7 +328,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             get { return state.Healed; }
             set { state.Healed = value; }
         }
-
+        public int RealDamage {
+            get { return state.RealDamage; }
+        }
         public int Hitpoints {
             get { return state.Hitpoints; }
         }
@@ -311,7 +390,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
     public class BattleCase3State
     {
         public String Name { get; set; }
-        //public BattleWarrior3State[] States {get;set;}
+
         public BattleWarrior3State[] Allies { get; set; }
         public BattleWarrior3State[] Enemies { get; set; }
 
@@ -404,14 +483,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             };
         }
 
-        public void Recalculate()
-        {
-            All.ForEach(Recalculate);
-        }
 
-        public void Recalculate(BattleWarrior3<T> unit)
+        public void Recalculate(BattleWarrior3<T> unit, bool quick = false)
         {
-            unit.RecalculateState(GetAlliesFor(unit), GetEnemiesFor(unit), quick: unit != Self);
+            unit.RecalculateState(GetAlliesFor(unit), GetEnemiesFor(unit), quick: quick || unit != Self);
         }
 
         public IEnumerable<BattleWarrior3<T>> GetAlliesFor(BattleWarrior3<T> w)
@@ -454,22 +529,4 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
-    /*
-     * emulator
-     * 
-     *   self.location = ...;
-     * 
-     *   now emulate
-     * 
-     *   for (warrior in allWarriors) {
-     *      warrior.RecalculateState(allWarriors);
-     *   }
-     *   
-     *   for (enemy in enemies)
-     *   {
-     *      enemy.GetVisibleEnemies();
-     *   }
-     * 
-     * 
-     * */
 }

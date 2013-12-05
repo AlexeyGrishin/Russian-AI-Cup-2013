@@ -23,5 +23,20 @@ namespace Tests.AI
 
             
         }
+
+        [TestMethod]
+        public void TestRealDamage()
+        {
+            var state = new BattleWarrior3State();
+            state.InitialHitpoints = 100;
+            state.Damage = 20;
+            state.Healed = 10;
+            Assert.AreEqual(20, state.RealDamage);
+            state.Damage = 100;
+            Assert.AreEqual(100, state.RealDamage);
+            state.Damage = 120;
+            Assert.AreEqual(110, state.RealDamage);
+
+        }
     }
 }

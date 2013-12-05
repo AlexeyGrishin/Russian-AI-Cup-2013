@@ -17,6 +17,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         StepToSickAlly,
         StepBack,
         StepToThrow,
+        StepToScout,
         Shoot,
         HealSelf,   //medkit
         HealAlly,
@@ -231,6 +232,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "heal sick", ActionDraft.StepToSickAlly, 0, 5, ActionDraft.HealAlly);
                 Add(list, "go to sick", ActionDraft.StepToSickAlly, 0, 5);
             }
+            //Add(list, "scout", ActionDraft.StepToScout);
+            //Add(list, "scout", ActionDraft.StepToScout, ActionDraft.StepToScout);
+            //Add(list, "scout", ActionDraft.StepToScout, ActionDraft.StepBack);        //--> scout and go back - remember that there is no snipers at that points, for 1-2 moves
             Add(list, "come, shoot, and go back", ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack);
             Add(list, "come x 2, shoot, and go back", ActionDraft.StepToEnemy, ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack);
             Add(list, "come x 2, shoot, and go back x 2", ActionDraft.StepToEnemy, ActionDraft.StepToEnemy, ActionDraft.Shoot, ActionDraft.StepBack, ActionDraft.StepBack);
@@ -760,7 +764,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
     {
         public abstract string Name { get; }
         public abstract List<ActionDraft> Actions { get; }
-        public int StepsCount { get { return Actions.Count(a => a == ActionDraft.StepToEnemy || a == ActionDraft.StepToSickAlly || a == ActionDraft.StepFromEnemy || a == ActionDraft.StepToThrow); } }
+        public int StepsCount { get { return Actions.Count(Emulator3.IsMoving); } }
     }
 
     public class Strategy: IStrategy

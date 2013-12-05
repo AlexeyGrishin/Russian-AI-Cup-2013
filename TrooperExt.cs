@@ -188,6 +188,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
             get { return Game.MedikitHealSelfBonusHitpoints; }
         }
 
+        public override int AllyMedkitHealth
+        {
+            get { return Game.MedikitBonusHitpoints; }
+        }
+
         internal void AddMoves(List<CSharpCgdk.Model.Move> list)
         {
             NextMoves = list;

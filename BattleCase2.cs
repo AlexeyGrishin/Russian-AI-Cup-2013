@@ -29,7 +29,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public abstract bool HasGrenade { get; }
         public abstract bool HasMedkit { get; }
         public abstract bool IsMedic { get; }
+        public bool CanHeal { get { return IsMedic || (!IsSick && HasMedkit); } }
         public abstract int MedkitHealth { get; }
+        public virtual int AllyMedkitHealth { get { return MedkitHealth; } }
+        public int GetMedkitHealth(Warrior2 another)
+        {
+            return another == this ? MedkitHealth : AllyMedkitHealth;
+        }
         public abstract int FieldRationExtraPoints { get; }
         public abstract bool IsSick { get; }
         public abstract int MedicHealth { get; }

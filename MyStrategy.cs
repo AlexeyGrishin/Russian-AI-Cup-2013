@@ -14,6 +14,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int Turn = 0;
         public static TrooperType Self = TrooperType.Commander;
         public static long PlayerId = -1;
+        public static bool? AreThereSnipers = null;
 
         public static int NeedHeeling = 60;
         public static int NeedHeelingOutsideBattle = 95;
@@ -30,6 +31,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public void Move(Trooper self, World world, Game game, Move move)
         {
+            if (AreThereSnipers == null) AreThereSnipers = world.Troopers.Any(t => t.Type == TrooperType.Sniper);
             var start = DateTime.Now;   //[DEBUG]
             try
             {
@@ -133,6 +135,17 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         }
 
 
+        static Game game;
+        internal static int SniperRangeFor(TrooperStance s)
+        {
+            switch (s)
+            {
+                case TrooperStance.Standing: return 10;
+                case TrooperStance.Kneeling: return 11;
+                case TrooperStance.Prone: return 12;
+            }
+            return 10;
+        }
     }
 
     public static class TrooperExtensions

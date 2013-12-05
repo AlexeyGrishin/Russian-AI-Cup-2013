@@ -14,6 +14,12 @@ namespace Tests.AI
     {
 
 
+        [TestInitialize]
+        public void SetUp()
+        {
+            MyStrategy.AreThereSnipers = true;
+
+        }
 
 
         class DumbMaze : IMaze, IWarriorMaze<Warrior2Mock>
@@ -291,24 +297,12 @@ namespace Tests.AI
             var selfLoc = MA.BuildMapFrom(Point.Get(2, 0), 10);
             var enemyLoc = MA.Get(8, 0);
             var self = new Warrior2Mock { AActions = 4, ADamage = 2, AHitpoints = 55, AAttackRange = 6, ALocation = selfLoc, AVisionRange = 10 };
-            var enemy = new Warrior2Mock { AActions = 6, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc, AVisionRange = 10, ATeammate = false };
+            var enemy = new Warrior2Mock { AActions = 6, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc, AVisionRange = 7, ATeammate = false };
             var battle = new BattleCase3<Warrior2Mock>(self, maze, new List<Warrior2Mock> { }, new [] {enemy});
             var resolution = Battle.All3(battle);
             CollectionAssert.AreEqual(new List<ActionType> { ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
         }
-        [TestMethod]
-        public void Test_Damage_more()
-        {
-            var maze = new DumbMaze();
-            var MA = WalkableMap.Create(maze);
-            var selfLoc = MA.BuildMapFrom(Point.Get(2, 0), 10);
-            var enemyLoc = MA.Get(8, 0);
-            var self = new Warrior2Mock { AActions = 4, ADamage = 8, AHitpoints = 55, AAttackRange = 6, ALocation = selfLoc, AVisionRange = 10 };
-            var enemy = new Warrior2Mock { ATeammate = false, AActions = 6, ADamage = 10, AHitpoints = 40, AAttackRange = 6, ALocation = enemyLoc, AVisionRange = 10 };
-            var battle = new BattleCase3<Warrior2Mock>(self, maze, new List<Warrior2Mock> { }, new [] {enemy});
-            var resolution = Battle.All3(battle);
-            CollectionAssert.AreEqual(new List<ActionType> { ActionType.Move, ActionType.Move }, resolution.First(m => m.Possible).Moves.Select(m => m.Action).ToList());
-        }
+
         [TestMethod]
         public void Test_Medkit()
         {

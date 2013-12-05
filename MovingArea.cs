@@ -36,6 +36,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public bool CloserToEnemy { get; set; }
         public bool VisibleToEnemy { get; set; }
         public bool VisibleToUs { get; set; }
+        public bool PossibleSniper { get; set; }
 
         public bool FreeSpace { get; set; } //TODO: delete
         /// > 0 - dangerous, =0 - neutral, < 0 - good to stand
@@ -177,6 +178,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                     item.FreeSpace = false;
                     item.VisibleToUs = false;   //TODO: delete
                     item.VisibleToEnemy = false;
+                    item.PossibleSniper = false;
                 }
             }
         }

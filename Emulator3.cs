@@ -19,6 +19,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public int LostMobility = 0;
         public int DangerIndex = 0;
 
+        public int CountOfInvisibleSnipersO_o = 0;
+
         public String Name;
 
         public StrategyChange3(String name, int step)
@@ -51,6 +53,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (another.EnemyLost != EnemyLost) return Better(EnemyLost - another.EnemyLost);
             if (another.UnitedDamage != UnitedDamage) return Better(UnitedDamage - another.UnitedDamage);
 
+            if (another.CountOfInvisibleSnipersO_o != CountOfInvisibleSnipersO_o) return Worse(CountOfInvisibleSnipersO_o - another.CountOfInvisibleSnipersO_o);
             if (another.PotentiallyHeal != PotentiallyHeal) return Better(PotentiallyHeal - another.PotentiallyHeal);
             if (another.DangerIndex != DangerIndex) return Worse(DangerIndex - another.DangerIndex);
             if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
@@ -72,10 +75,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public override string ToString()
         {
-            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9}, danger = {8}",
+            return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9}, danger = {8}, O_o = {10}",
                 OurLost,    EnemyLost,         OurDamage,      EnemyDamage, 
                 OurHeal,    EnemyDamageNHeal,  UnitedDamage,   F(PotentiallyHeal, "hea"),
-                DangerIndex, F(LostMobility, "mob")
+                DangerIndex, F(LostMobility, "mob"), CountOfInvisibleSnipersO_o
                 );
         }
 
@@ -178,7 +181,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public static StrategyResult3 Emulate<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy) where T: Warrior2
         {
             var ways = Tool.DistinctWays(GetWays<T>(battleCase, strategy), strategy.StepsCount + 1);
-            using (Tool.Timer(strategy.Name + ": " + ways.Count()))
+            //using (Tool.Timer(strategy.Name + ": " + ways.Count()))
             {
                 var results = ways.Select(w => Emulate<T>(battleCase, strategy, w)).ToList();
                 results.Sort();
@@ -197,56 +200,59 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 case ActionDraft.StepFromEnemy: return battleCase.Self.WaysToSafe.Concat(battleCase.Self.WaysToHide).ToList();
                 case ActionDraft.StepToSickAlly: return battleCase.Self.WaysToHeal;
                 case ActionDraft.StepToThrow: return battleCase.Self.WaysToThrow;
+                case ActionDraft.StepToScout: return battleCase.Self.WaysToScout;
             }
             throw new Exception("Illegal state");
         }
 
-        private static bool IsMoving(ActionDraft arg)
+        public static bool IsMoving(ActionDraft arg)
         {
- 	        return arg == ActionDraft.StepBack || arg == ActionDraft.StepFromEnemy || arg == ActionDraft.StepToEnemy || arg == ActionDraft.StepToSickAlly || arg == ActionDraft.StepToThrow;
+ 	        return arg == ActionDraft.StepFromEnemy || arg == ActionDraft.StepToEnemy || arg == ActionDraft.StepToSickAlly || arg == ActionDraft.StepToThrow || arg == ActionDraft.StepToScout;
         }
 
         public static StrategyResult3 Emulate<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy, IEnumerable<PossibleMove> wayToFollow) where T: Warrior2
         {
             var res = new StrategyResult3(strategy.Name);
             battleCase.BeginCase();
-            var succeed = false;
-            succeed = EmulateStrategy(res, battleCase, strategy, wayToFollow);
+            var succeed = EmulateStrategy(res, battleCase, strategy, wayToFollow);
+            var dirty = false;
             if (succeed)
             {
-                using (Tool.Timer("..enemies"))
+                //using (Tool.Timer("..enemies"))
                 {
                     EmulateEnemiesTurn(res, battleCase);
                 }
-                using (Tool.Timer("..after enemies"))
+                //using (Tool.Timer("..after enemies"))
                 {
                     Fill(res.ChangeThisTurn, battleCase);
                     res.StartNextTurn();
                 }
-                using (Tool.Timer("..self"))
+                //using (Tool.Timer("..self"))
                 {
                     PredictNextTurn(res, battleCase);
                     Fill(res.ChangeNextTurn, battleCase);
-
+                    dirty = true;
                 }
                 res.Description = ToDescription(res, battleCase);   //[DEBUG]
                 battleCase.Reset();
             }
             battleCase.EndCase();
+            if (dirty)
+                battleCase.Recalculate(battleCase.Self, quick: true);
             return res;
         }
 
         private static void Fill<T>(StrategyChange3 strategyChange3, BattleCase3<T> battleCase) where T : Warrior2
         {
             strategyChange3.OurLost = battleCase.AlliesAndSelf.Count(a => !a.Alive);
-            strategyChange3.OurDamage = battleCase.AlliesAndSelf.Sum(a => a.Damage);
+            strategyChange3.OurDamage = battleCase.AlliesAndSelf.Sum(a => a.RealDamage);
             strategyChange3.OurHeal = battleCase.AlliesAndSelf.Sum(a => a.Healed);
             strategyChange3.EnemyLost = battleCase.Enemies.Count(e => !e.Alive);
-            strategyChange3.EnemyDamage = battleCase.Enemies.Sum(e => e.Damage);
+            strategyChange3.EnemyDamage = battleCase.Enemies.Sum(e => e.RealDamage);
             strategyChange3.DangerIndex = battleCase.Self.Location.DangerIndex;
             var oldLocation = battleCase.Self[battleCase.Self.Warrior.Location];
             var newLocation = battleCase.Self[battleCase.Self.Location];
-            if (battleCase.Self.Warrior.IsMedic)
+            if (battleCase.Self.Warrior.CanHeal)
                 strategyChange3.PotentiallyHeal = battleCase.Allies.Select(a => a.Location.DistanceTo(oldLocation) - a.Location.DistanceTo(newLocation)).MaxOr(0);
             var oldPosition = battleCase.Self.Warrior.Position;
             var newPosition = battleCase.Self.Position;
@@ -255,6 +261,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 strategyChange3.LostMobility = 0;
             if (newLocation.CanHideFromAttackSomehow)
                 strategyChange3.LostMobility = 0;
+            if (battleCase.Self.CountOfInvisibleSnipers > 0)
+                strategyChange3.CountOfInvisibleSnipersO_o = battleCase.Self.CountOfInvisibleSnipers;
 
         }
 
@@ -291,7 +299,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             foreach (var action in actions)
             {
                 ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
-                if (action == ActionDraft.StepToEnemy || action == ActionDraft.StepFromEnemy || action == ActionDraft.StepToSickAlly || action == ActionDraft.StepToThrow)
+                if (IsMoving(action))
                 {
                     distance += 1;
                     continue;
@@ -330,7 +338,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 }
                 else if (action == ActionDraft.HealAlly)
                 {
-                    if (!battleCase.Self.Warrior.IsMedic) return sr.SetImpossible("Unit is not a medic!");
+                    if (!battleCase.Self.Warrior.CanHeal) return sr.SetImpossible("Unit is not a medic and does not have medkit!");
                     if (!Heal(sr, battleCase, ref points, ref hasRation)) return false;
                 }
                 else if (action == ActionDraft.HealSelf)
@@ -398,12 +406,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             foreach (var unit in unitsToTurn)
             {
-                using (Tool.Timer("...recalculate"))
+                //using (Tool.Timer("...recalculate"))
                 {
-                    battleCase.Recalculate(unit);
+                    battleCase.Recalculate(unit, quick: true);
                 }
                 var cases = new List<BattleCase3State>();
-                using (Tool.Timer("...cases "))
+                //using (Tool.Timer("...cases "))
                 {
                     for (var wl = 0; wl <= MyStrategy.MaxStepsEnemyWillDo; wl++)
                     {
@@ -425,7 +433,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                                 unit.Warrior.DoIfCan(ActionType.Shoot, ref enemyPoints);
                                 lastAttackedUnit.Damage += unit.Warrior.GetDamage();
                             }
-                            cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
+                            if (wl == 0 || attackedUnits.Count() > 0)   //otherwise we emulate cases like 'enemy just comes closer to get bullet'
+                                cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
+                            else
+                                battleCase.EndCase();
                         }
                     }
                     if (unit.CanComeAndThrowGrenade[0])
@@ -453,7 +464,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     cases.Reverse();
                 }
                 //Console.WriteLine(String.Join("\n", cases));
-                using (Tool.Timer("...begin case"))
+                //using (Tool.Timer("...begin case"))
                 {
                     var bestCase = cases.FirstOrDefault();
                     if (bestCase != null)
@@ -483,6 +494,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         private static void PredictNextTurn<T>(StrategyResult3 res, BattleCase3<T> battleCase) where T : Warrior2
         {
             EmulateTurn(battleCase, battleCase.Allies.Where(e => e.Alive).ToList(), new MaxEnemyDamage());
+            battleCase.Recalculate(battleCase.Self, quick: true);
         }
 
         private static void ExtraRation<T>(StrategyResult3 sr, BattleCase3<T> battleCase, ref int points, ref bool hasRation) where T : Warrior2
@@ -503,7 +515,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (battleCase.SickAllies.All(a => a.Location.DistanceTo(battleCase.Self.Location) > 1)) return sr.SetImpossible("Cannot heal - distance > 1");
             if (!battleCase.Self.Warrior.Can(ActionType.Heal, 1, points)) return sr.SetImpossible("Not enough points to just heal once");
             var sickAllyNear = battleCase.SickAllies.Where(a => a.Location.DistanceTo(battleCase.Self.Location) <= 1).OrderBy(a => a.Warrior.Hitpoints).FirstOrDefault();
-            while (battleCase.Self.Warrior.DoIfCan(ActionType.Heal, ref points))
+            if (battleCase.Self.Warrior.HasMedkit && battleCase.Self.Warrior.Can(ActionType.UseMedikit, 1, points))
+            {
+                sr.Moves.Add(new Move { Action = ActionType.UseMedikit, X = sickAllyNear.Location.X, Y = sickAllyNear.Location.Y });
+                sickAllyNear.Healed += battleCase.Self.Warrior.GetMedkitHealth(sickAllyNear.Warrior);
+                ExtraRation<T>(sr, battleCase, ref points, ref hasRation);
+            }
+            while (battleCase.Self.Warrior.IsMedic && battleCase.Self.Warrior.DoIfCan(ActionType.Heal, ref points))
             {
                 sr.Moves.Add(new Move { Action = ActionType.Heal, X = sickAllyNear.Location.X, Y = sickAllyNear.Location.Y });
                 sickAllyNear.Healed += battleCase.Self.Warrior.MedicHealth;
@@ -620,7 +638,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     if (!battleCase.Self.Warrior.DoIfCan(ActionType.Move, 1, ref points)) return sr.SetImpossible(String.Format("Not enought action points ({0}) to perform {1} steps", points, distance));
                     if (point.DistanceTo(way[wayIdx]) != 1)
                     {
-                        var a = 5;
+                      var a = 5;
                     }
                     sr.Moves.Add(new Move().Move(point.DirectionTo(way[wayIdx])));
                     point = way[wayIdx];
