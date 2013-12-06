@@ -8,6 +8,7 @@ using System.Text;
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 {
 
+    //оценочная структура - результат 1 хода. в основном по ней идет сравнение
     public class StrategyChange3 : IComparable
     {
         public int EnemyDamage = 0;
@@ -105,6 +106,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
+    //результат предсказания - содержит инфу за 2 хода - этот и следующий
     public class StrategyResult3 : IComparable
     {
         public StrategyChange3 ChangeThisTurn { get; private set; }
@@ -185,6 +187,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         public string Description { get; set; }
     }
 
+    //сердце бота - эмулятор боя
     public class Emulator3
     {
 
@@ -220,6 +223,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
  	        return arg == ActionDraft.StepFromEnemy || arg == ActionDraft.StepToEnemy || arg == ActionDraft.StepToSickAlly || arg == ActionDraft.StepToThrow || arg == ActionDraft.StepToScout;
         }
 
+        //ходим сами, предполагаем ход врага и ответный ход
         public static StrategyResult3 Emulate<T>(BattleCase3<T> battleCase, AI.Battle.IStrategy strategy, IEnumerable<PossibleMove> wayToFollow) where T: Warrior2
         {
             var res = new StrategyResult3(strategy.Name);
@@ -299,6 +303,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
 
 
+        //просчет выбранной стратегии. + добавляет полезные ништяки типа полечиться, упороться завтраком, сныкаться и т.д.
         private static bool EmulateStrategy<T>(StrategyResult3 sr, BattleCase3<T> battleCase, AI.Battle.IStrategy strategy, IEnumerable<PossibleMove> way) where T : Warrior2
         {
             int points = battleCase.Self.Warrior.Actions;
@@ -361,7 +366,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                 }
                 else if (action == ActionDraft.HealSelf)
                 {
-                    //TODO: reduce .Warrior calls - wrap...
                     if (!hasMedkit) return sr.SetImpossible("Unit does not have medkit!");
                     if (!self.Warrior.DoIfCan(ActionType.UseMedikit, ref points)) return sr.SetImpossible(String.Format("Cannot use medkit - not enough points({0})", points));
                     sr.Moves.Add(new Move { Action = ActionType.UseMedikit });
@@ -421,6 +425,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             EmulateTurn(battleCase, battleCase.Enemies.Where(e => e.Alive).ToList(), new MaxAlliesDamage());
         }
 
+        //по-простому эмулирует ответ врагов или наш ответ. считает что боец обязательно будет наносить максимальный урон.
         private static void EmulateTurn<T>(BattleCase3<T> battleCase, IEnumerable<BattleWarrior3<T>> unitsToTurn, IComparer<BattleCase3State> comparer) where T : Warrior2
         {
             foreach (var unit in unitsToTurn)
@@ -509,7 +514,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                     }
                 }
             }
-            //TODO: expected damage VS real damage
         }
 
         class MaxAlliesDamage: IComparer<BattleCase3State>

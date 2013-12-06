@@ -13,6 +13,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         PossibleMove this[Point key] { get; }
     }
 
+    //точка на карте со всякими характеристиками
     public class PossibleMove
     {
         public int Step { get; set; }
@@ -121,6 +122,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return Math.Abs(X - a.X) + Math.Abs(Y - a.Y);
         }
 
+        //кэш расстояний
         private static Dictionary<long, int> distances = new Dictionary<long, int>();
         private static int Dist(int dx, int dy)
         {
@@ -158,6 +160,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         }
     }
 
+    //строит карту в ширину от указанной точки, с учетом препятствий и опасностей.
+    //юзается и для ходьбы, и для боя
     public class WalkableMap : IMapContext
     {
         private PossibleMove[,] map;

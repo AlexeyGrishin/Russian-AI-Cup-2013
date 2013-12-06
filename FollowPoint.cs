@@ -8,6 +8,8 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
+    //тупая бродился по углам. один из бойцов назначается "глазами" и идет по точкам, остальные топают за ним
+    //нерешенная проблема - мешают друг другу, сцуки, и пытаются иногда оббежать какое-нибудь препятствие вместо того чтобы идти следом
     public class FollowPoint
     {
         private int checkPointIdx;
@@ -98,7 +100,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
             else
             {
-                //TODO:!!!!!!!!!!!!
                 way = Tool.LessDangerousWay(map.FindWays(self.Location, CheckPoint).ToList(), stepsLeft).ToList();
                 Console.WriteLine("Eyes[" + self.Type + "] goes to checkpoint");//[DEBUG]
                 Console.WriteLine(String.Join("," ,way.Select(w => "[" + w.X + ", " + w.Y + "]")));

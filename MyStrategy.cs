@@ -16,6 +16,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static long PlayerId = -1;
         public static bool? AreThereSnipers = null;
 
+        //Это собственно всякие настраиваемые параметры. Не все, правда, используются
         public static int NeedHeeling = 80;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
@@ -27,6 +28,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int MaxStepsEnemyWillDo = 2;
         public static double NotStandingDamageCoeff = 0.5;
 
+        //Это для отладки
         public static void Break(int turn, TrooperType type)
         {
             if (Turn == turn && Self == type)
@@ -49,10 +51,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 Console.WriteLine("----- Turn: " + Turn + " [" + self.Type + "]"); //[DEBUG]
                 self.Update(game);
                 world.Troopers.ToList().ForEach(t => t.Update(game));
+                //строим карту перемещений
                 var MA = WalkableMap.Instance(world.ToMaze());
                 MA.BuildMapFrom(self.GetPosition(), (int)world.Width, p => !world.ToMaze().HasNotWallOrUnit(p.X, p.Y), p => p.AllWayDangerIndex);
                 Logger.Logger.Instance().LogMap(world);//[DEBUG]
 
+                //вызываем боевой модуль. если есть опасность - он разберется что делать
                 var BS = new BattleStrategy();
                 bool inBattle = false;
                 if (BS.IsInDanger(self, world))
@@ -66,7 +70,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     BS.CancelSteps(self);
 
                 }
-
+                //полечиться, если больше нечем заняться
                 if (!move.IsMade() && self.Ext().IsSick && self.IsHoldingMedikit && self.Ext().Can(ActionType.UseMedikit))
                 {
                     move.Action = ActionType.UseMedikit;
@@ -74,11 +78,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 if (!inBattle)
                 {
+                    //не в бою лучше встать, если есть возможность
                     if (!move.IsMade() && self.Ext().Can(ActionType.RaiseStance) && self.Stance != TrooperStance.Standing)
                     {
                         move.Action = ActionType.RaiseStance;
                     }
                     self.Ext().SaveHitpoints();
+                    //тут мы лечимся между боями
                     if (!move.IsMade() && self.Type != TrooperType.FieldMedic && self.Ext().IsABitSick && world.Troopers.Where(t => t.IsTeammate && t.Type == TrooperType.FieldMedic).Any(t => t.GetDistanceTo(self) <= 1))
                     {
                         if (!self.Ext().HasBeenDamaged())
@@ -104,6 +110,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                         }
                         //TODO: go to
                     }
+                    //собираем бонусы между боями
                     if (!move.IsMade())
                     {
                         var bonusesAround = world.Bonuses.Where(b => b.GetDistanceTo(self) == 1).Where(b => self.CanTake(b.Type)).Where(b => !world.Troopers.Any(t => t.X == b.X && t.Y == b.Y));
@@ -116,6 +123,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                             move.Y = bonus.Y;
                         }
                     }
+                    //ну и если ничего другого не остается, то перемещаемся
                     if (!move.IsMade() && self.ActionPoints >= game.StandingMoveCost)
                     {
                         FollowToPoints.Instance.DoMove(self, world, move);
@@ -123,6 +131,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     }
 
                 }
+                //это чтобы не падало
                 LastGuard(move, self.ActionPoints, self.Ext());
 
             }

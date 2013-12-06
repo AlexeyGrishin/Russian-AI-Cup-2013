@@ -7,6 +7,7 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 {
+    //тулзы
     public static class Tool
     {
         public static Direction GetDirection(Unit u1, Unit target)

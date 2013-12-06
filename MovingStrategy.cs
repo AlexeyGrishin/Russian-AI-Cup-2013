@@ -7,6 +7,7 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 {
+    //ага, интерфейсы, стратегии - размечтался
     public interface IMovingStrategy
     {
         void DoMove(Trooper self, World world, Move move);

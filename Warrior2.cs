@@ -7,6 +7,7 @@ using System.Text;
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 {
 
+    //собственно нужен только для юнит-тестов, вся реализация в TrooperExt
     public abstract class Warrior2 : Positioned2
     {
         public abstract int Actions { get; }
@@ -151,6 +152,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         public int VisibleOutsideOnly = 0;
     }
 
+    //глобальная карта опасностей. создается единожды. кстати я затупил - надо было считать только для 1/4, т.к. карта симметрична
     public class DangerMap
     {
         private int[, ,] dangerMap;

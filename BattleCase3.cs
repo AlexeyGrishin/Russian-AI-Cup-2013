@@ -7,8 +7,8 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 {
-    //1-1 to TrooperExt
-
+    
+    //состояние бойца - используется при эмуляции
     public class BattleWarrior3State
     {
         public BattleWarrior3State() { }
@@ -60,6 +60,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
+    //эмулируемый боец. содержит стэк состояний. при эмуляции добавляем состояние в стек и меняем его. если ход нам не подходит - откатываем состояние
     public class BattleWarrior3<T> : IMapContext where T : Warrior2
     {
         private BattleWarrior3State state {get {return states.Peek();}}
@@ -108,6 +109,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
 
 
+        //индекс опасности - насколько опасна точка.
         private void DefineDangerIndex(BattleWarrior3<T> self, PossibleMove move, TrooperStance ourStance, IEnumerable<BattleWarrior3<T>> alliesAndSelf)
         {
             var maxAttackRange = 12;
@@ -153,6 +155,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         }
 
+        //тут мы смотрим на мир вокруг и даем разные оценки точкам
         private void BuildWays(Func<PossibleMove, bool> exclude, IEnumerable<BattleWarrior3<T>> allies, IEnumerable<BattleWarrior3<T>> enemies, bool quick)
         {
             bool snipersInKnownEnemies = enemies.Any(e => e.Type == TrooperType.Sniper);
@@ -198,6 +201,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             return warrior.VisionRange > allies.Max(m => m.Warrior.VisionRange);
         }
 
+        //а тут строим маршруты - к врагу, от врага, чтобы кинуть гранату, чтобы полечить, и т.д.
         private void BuildAttackingProps(IEnumerable<BattleWarrior3<T>> allies, IEnumerable<BattleWarrior3<T>> enemies)
         {
             //1. way to became attacker - ways to point I can attack from with minimal danger
@@ -392,6 +396,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
+    //состояние всей "битвы", т.е. всех участников боя
     public class BattleCase3State
     {
         public String Name { get; set; }
@@ -408,6 +413,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
+    //представляет собой текущую ситуацию на поле боя.
     public class BattleCase3<T>: IMapContext where T: Warrior2
     {
         public BattleCase3(T self, T enemy, IWarriorMaze<T> maze, IEnumerable<T> allies = null, IEnumerable<T> enemies = null)

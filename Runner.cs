@@ -3,6 +3,7 @@ using System;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
+    //тож не мое
     public sealed class Runner
     {
         private readonly RemoteProcessClient remoteProcessClient;

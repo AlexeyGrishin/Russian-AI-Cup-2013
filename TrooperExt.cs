@@ -7,6 +7,7 @@ using System.Text;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
 {
+    //вспомогательный класс, привязан к Trooper 1 к 1, живет все время и поэтому хранит состояние между боями
     public class TrooperExt : Warrior2, Positioned2//, Pointed
     {
         internal Trooper orig;

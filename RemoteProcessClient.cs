@@ -6,6 +6,7 @@ using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
+    //не мое
     public sealed class RemoteProcessClient
     {
         private const int BufferSizeBytes = 1 << 20;

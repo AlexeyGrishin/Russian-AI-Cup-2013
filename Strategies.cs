@@ -9,6 +9,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
 {
 
 
+    //введено для удобных описаний маршрутов
     public enum ActionDraft
     {
         None,
@@ -50,6 +51,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return allCases;
         }
 
+        //мозг бота - набор стратегий на все случаи жизни :) подаются на вход эмулятору
         private static List<IStrategy> StrategiesFor<T>(int stepsToAttack, bool hasGrenade, bool isMedic, bool hasSickAlly) where T : Warrior2
         {
             var list = new List<IStrategy>();

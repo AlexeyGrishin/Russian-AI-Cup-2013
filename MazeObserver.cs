@@ -16,7 +16,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         int DangerIndex(int x, int y, TrooperStance stance = TrooperStance.Standing);
     }
 
-    //TODO: points cache
+    //тупо точка
     public class Point
     {
         public int X {get;set;}
@@ -70,10 +70,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         }
     }
 
-    public interface IMazeObserver
-    {
-        IList<Direction> NextSteps(IMaze maze, Point currentPosition, int countSteps);
-    }
 
 
 }
