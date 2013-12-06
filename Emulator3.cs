@@ -434,7 +434,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
                 var cases = new List<BattleCase3State>();
                 //using (Tool.Timer("...cases "))
-                //TODO: for moves - analyze position of enemy. If Prone/Kneeling - let them stand up
                 {
                     for (var wl = 0; wl <= MyStrategy.MaxStepsEnemyWillDo; wl++)
                     {
@@ -461,7 +460,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                                 lastAttackedUnit.Damage += unit.Warrior.GetDamage();
                             }
                             if (wl == 0 || attackedUnits.Count() > 0)   //otherwise we emulate cases like 'enemy just comes closer to get bullet'
-                                cases.Add(battleCase.EndCase(unit.ShortString() + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
+                                cases.Add(battleCase.EndCase(unit.ShortString() + (pointsBeforeMove > 0 && wl > 0 ? "stands up," : "") + " come " + wl + " steps and shoot " + (attackedUnits.Count() == 0 ? "nowhere" : String.Join(",", attackedUnits.Select(au => au.ShortString())))));
                             else
                                 battleCase.EndCase();
                         }
