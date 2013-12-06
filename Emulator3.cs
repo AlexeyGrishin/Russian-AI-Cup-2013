@@ -48,6 +48,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             }
         }
 
+        public int UnitedDangerIndex
+        {
+            get
+            {
+                return DangerIndex - ReadyToAttack;
+            }
+        }
+
         public int CompareTo(StrategyChange3 another)
         {
             if (another.OurLost != OurLost) return Worse(OurLost - another.OurLost);
@@ -56,7 +64,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
             if (another.CountOfInvisibleSnipersO_o != CountOfInvisibleSnipersO_o) return Worse(CountOfInvisibleSnipersO_o - another.CountOfInvisibleSnipersO_o);
             if (another.PotentiallyHeal != PotentiallyHeal) return Better(PotentiallyHeal - another.PotentiallyHeal);
-            if (another.DangerIndex != DangerIndex) return Worse(DangerIndex - another.DangerIndex);
+            if (another.UnitedDangerIndex != UnitedDangerIndex) return Worse(UnitedDangerIndex - another.UnitedDangerIndex);
             if (another.ReadyToAttack != ReadyToAttack) return Better(ReadyToAttack - another.ReadyToAttack);
             if (another.LostMobility != LostMobility) return Worse(LostMobility - another.LostMobility);
 
@@ -80,7 +88,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             return String.Format("(o/e) lost = {0}/{1} damage = {2}/{3}(+{4}={5}) = {6}, flags = {7} {9} {11}, danger = {8}, O_o = {10}",
                 OurLost,    EnemyLost,         OurDamage,      EnemyDamage, 
                 OurHeal,    EnemyDamageNHeal,  UnitedDamage,   F(PotentiallyHeal, "hea"),
-                DangerIndex, F(-LostMobility, "mob"), CountOfInvisibleSnipersO_o, F(ReadyToAttack, "atk")
+                UnitedDangerIndex, F(-LostMobility, "mob"), CountOfInvisibleSnipersO_o, F(ReadyToAttack, "atk")
                 );
         }
 
@@ -262,8 +270,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             if (battleCase.Enemies.Any(e => e.Alive && battleCase.Self.CanAttack(e)))
             {
                 strategyChange3.LostMobility = 0;
-                if (!oldLocation.CanAttackFromHere)
-                    strategyChange3.ReadyToAttack = 0;
+            }
+            if (!oldLocation.CanAttackFromHere && battleCase.Self.CanComeAndAttack[0])
+            {
+                strategyChange3.ReadyToAttack = 1;
             }
             if (newLocation.CanHideFromAttackSomehow)
                 strategyChange3.LostMobility = 0;

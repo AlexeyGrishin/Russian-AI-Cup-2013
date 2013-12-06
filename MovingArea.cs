@@ -121,9 +121,24 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
             return Math.Abs(X - a.X) + Math.Abs(Y - a.Y);
         }
 
+        private static Dictionary<long, int> distances = new Dictionary<long, int>();
+        private static int Dist(int dx, int dy)
+        {
+            if (dx < 0) dx = -dx;
+            if (dy < 0) dy = -dy;
+            var key = dx * 100 + dy;
+            int value = 0;
+            if (!distances.TryGetValue(key, out value))
+            {
+                value = (int)Math.Sqrt(dx * dx + dy * dy);
+                distances[key] = value;
+            }
+            return value;
+        }
+
         public long RealDistanceTo(PossibleMove a)
         {
-            return (int)Math.Sqrt((X - a.X) * (X - a.X) + (Y - a.Y) * (Y - a.Y));
+            return Dist(X - a.X, Y - a.Y);
         }
 
         public override bool Equals(object obj)

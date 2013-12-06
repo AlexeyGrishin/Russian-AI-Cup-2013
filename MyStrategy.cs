@@ -123,6 +123,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     }
 
                 }
+                LastGuard(move, self.ActionPoints, self.Ext());
 
             }
             catch (Exception e)
@@ -140,6 +141,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }//[DEBUG]
             }
 
+        }
+
+        private void LastGuard(Model.Move move, int pointsLeft, AI.Model.TrooperExt trooperExt)
+        {
+            if (trooperExt.Cost(move.Action) > pointsLeft)
+            {
+                Console.WriteLine("ERROR - Not enough points for " + move.AsString() + ". Cancel");
+                move.Wait();
+            }
         }
 
 

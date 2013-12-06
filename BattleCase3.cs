@@ -77,6 +77,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             states.Push(new BattleWarrior3State(warrior));
             battleMap = new WalkableMap(maze);
             state.Location = battleMap[warrior.Location];
+            
         }
 
         public void RecalculateState(IEnumerable<BattleWarrior3<T>> alliesWithoutMe, IEnumerable<BattleWarrior3<T>> enemies, bool quick = false)
@@ -109,14 +110,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         private void DefineDangerIndex(BattleWarrior3<T> self, PossibleMove move, TrooperStance ourStance, IEnumerable<BattleWarrior3<T>> alliesAndSelf)
         {
-            /*if (move.CanBeAttackedSomehow)
-            {
-                move.DangerIndex = 500;
-                return;  //does not make sense - we know this point is dangerous enough
-            }*/
             var maxAttackRange = 12;
-            var dangerIndex = 0;
+            var pointsAmount = 0;
             var maxAttackRadius = Tool.GetRadius(maxAttackRange);
+            int minDistance = 99, maxDistance = -1;
             for (var dx = -maxAttackRange; dx <= maxAttackRange; dx++)
             {
                 for (var dy = -maxAttackRange; dy <= maxAttackRange; dy++)
@@ -127,11 +124,17 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
                         //ok, someone in this point may attack us. check that we do not see it
                         if (!alliesAndSelf.Any(a => a.warrior.CanTheoreticallySee(point.Point) && maze.CanAttack(a.Location.X, a.Location.Y, ourStance, point.X, point.Y)))
                         {
-                            dangerIndex++;
+                            var distance = (int)point.RealDistanceTo(move);
+                            minDistance = Math.Min(minDistance, distance);
+                            maxDistance = Math.Max(maxDistance, distance);
+                            pointsAmount++;
                         }
                     }
                 }
             }
+            var distancesRange = maxDistance - minDistance;
+            var dangerIndex = pointsAmount > 0 ? (minDistance <= 4 ? 10 : 1) + distancesRange : 0;
+            Console.WriteLine("Danger for " + move + ": " + (pointsAmount > 0 ? "there are " + pointsAmount + " points attack this one with distances from " + minDistance + " to " + maxDistance + ", index = " + dangerIndex : "no danger"));    //[DEBUG]
             move.DangerIndex = dangerIndex; ;
         }
 
@@ -154,7 +157,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             bool snipersInKnownEnemies = enemies.Any(e => e.Type == TrooperType.Sniper);
             var scaryForSnipers = MyStrategy.AreThereSnipers.GetValueOrDefault(false) && !snipersInKnownEnemies;
-            var observeRange = quick ? warrior.AbsoluteMaxSteps : warrior.AbsoluteMaxSteps * 2;
+            var observeRange = quick ? (warrior.AbsoluteMaxSteps + 2) : warrior.AbsoluteMaxSteps * 2;
             var analysisRange = observeRange;
             var dangerIndexingRange = observeRange;
             if (battleMap[Location].Step != 0 || IsTeammate)
@@ -206,7 +209,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             //2. steps to became attacker
             StepsToAttack = WaysToAttack.Select(w => w.Count() - 1).MinOr(100);
             //3. ability to became attacker (this turn, next turn)
-            CanComeAndAttack = new bool[] { StepsToAttack <= warrior.MaxSteps, StepsToAttack <= warrior.MaxSteps + warrior.AbsoluteMaxSteps };
+            CanComeAndAttack = new bool[] { StepsToAttack <= warrior.AbsoluteMaxSteps, StepsToAttack <= warrior.MaxSteps + warrior.AbsoluteMaxSteps };
 
             if (warrior.HasGrenade)
             {
@@ -248,6 +251,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
         {
             //4. way to go out from attack - ways to points not attackable from standing
             WaysToSafe = state.Location.Where(p => p.Back == null ? p.CanHideFromAttackSomehow : ((!p.CanBeAttackedOnStand && p.Back.CanBeAttackedOnStand) || (!p.CanBeAttackedOnKneel && p.Back.CanBeAttackedOnKneel) || (!p.CanBeAttackedOnProne && p.Back.CanBeAttackedOnProne))).Select(p => p.PathToThis()).ToList();
+            //if (WaysToSafe.Count() == 1 && WaysToSafe.First().Count() == 1)
+            {
+                //if do not have ways to go - then go to ally
+                WaysToSafe = allies.Select(a => battleMap.PointsAround(a.Location).OrderBy(p => p.DangerIndex).FirstOrDefault()).Where(p => p != null).Select(p => p.PathToThis());
+            }
             //5. steps to gout out from attack
             var stepsToBecameNotAttackable = WaysToSafe.Select(w => w.Count() - 1).MinOr(100);
             //6. ability to go out from attack (this turn, next turn)

@@ -164,6 +164,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Model
                 case ActionType.EndTurn: return 0;
                 case ActionType.EatFieldRation: return Game.FieldRationEatCost;
                 case ActionType.ThrowGrenade: return Game.GrenadeThrowCost;
+                case ActionType.RequestEnemyDisposition: return Game.CommanderRequestEnemyDispositionCost;
             }
             throw new Exception("Unknown action");
         }
