@@ -258,7 +258,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             //if (WaysToSafe.Count() == 1 && WaysToSafe.First().Count() == 1)
             {
                 //if do not have ways to go - then go to ally
-                WaysToSafe = allies.Select(a => battleMap.PointsAround(a.Location).OrderBy(p => p.DangerIndex).FirstOrDefault()).Where(p => p != null).Select(p => p.PathToThis());
+                WaysToSafe = WaysToSafe.Concat(allies.Select(a => battleMap.PointsAround(this[a.Location]).OrderBy(p => p.DangerIndex).FirstOrDefault()).Where(p => p != null).Select(p => p.PathToThis())).ToList();
             }
             //5. steps to gout out from attack
             var stepsToBecameNotAttackable = WaysToSafe.Select(w => w.Count() - 1).MinOr(100);
