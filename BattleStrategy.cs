@@ -154,5 +154,36 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
         {
             self.Ext().NextMoves.Clear();
         }
+
+        static int imagId = 1000;
+
+        public bool ImagineEnemy(Trooper self, Move move, World world, Game game)
+        {
+            var maxAttackRadius = MyStrategy.AreThereSnipers.GetValueOrDefault(false) ? 12 : 9;
+            var allies = world.Troopers.Where(a => a.IsTeammate);
+            var possibleEnemies = new List<PossibleMove>();
+            for (var dx = -maxAttackRadius; dx <= maxAttackRadius; dx++)
+            {
+                for (var dy = -maxAttackRadius; dy <= maxAttackRadius; dy++)
+                {
+                    var p = WalkableMap.Instance().Get(Point.Get(self.X + dx, self.Y + dy));
+                    if (p != null && !allies.Any(a => world.IsVisible(a.VisionRange, a.X, a.Y, a.Stance, p.X, p.Y, a.Stance)) && world.IsVisible(maxAttackRadius, p.X, p.Y, self.Stance, self.X, self.Y, self.Stance))
+                        possibleEnemies.Add(p);
+                }
+            }
+            possibleEnemies = possibleEnemies.OrderBy(p => p.RealDistanceTo(self.Ext().Location)).Reverse().ToList();
+            var enemyPos = possibleEnemies.FirstOrDefault();
+            if (enemyPos != null)
+            {
+                var enemy = new Trooper (imagId++, enemyPos.X, enemyPos.Y, 10, 1, false, TrooperType.Sniper, self.Stance, 99, 99, 10, 10, maxAttackRadius, maxAttackRadius, self.ShootCost, self.StandingDamage, self.KneelingDamage, self.ProneDamage, 66, false, false, false);
+                enemy.Ext().Game = game;
+                Console.WriteLine("Imagine enemy at " + enemyPos);
+                oldEnemies.Add(enemy);
+                oldEnemiesTurn = MyStrategy.Turn;
+                return true;
+            }
+            return false;
+            
+        }
     }
 }

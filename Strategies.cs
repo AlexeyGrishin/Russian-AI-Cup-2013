@@ -65,12 +65,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI.Battle
                 Add(list, "kneel and shoot and stand back", ActionDraft.OnKneel, ActionDraft.Shoot, ActionDraft.StandUp);
                 Add(list, "line down and shoot", ActionDraft.LieDown, ActionDraft.Shoot);
                 Add(list, "shoot and kneel to hide", ActionDraft.Shoot, ActionDraft.OnKneel);
+                Add(list, "shoot and lie down to hide", ActionDraft.Shoot, ActionDraft.LieDown);
+                Add(list, "shoot and go away and kneel", ActionDraft.Shoot, ActionDraft.StepFromEnemy, ActionDraft.OnKneel);
+                Add(list, "shoot and go away and lie down", ActionDraft.Shoot, ActionDraft.StepFromEnemy, ActionDraft.LieDown);
             }
 
             Add(list, "come and shoot", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.Shoot);
             //if (battleCase.Self.Type == TrooperType.Sniper)
             {
                 Add(list, "kneel to hide", ActionDraft.OnKneel);
+                Add(list, "lie down to hide", ActionDraft.LieDown);
                 Add(list, "come and kneel", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.OnKneel);   //for sniper
                 Add(list, "come and lie down", ActionDraft.StepToEnemy, 1, Math.Min(Math.Max(1, stepsToAttack), 5), ActionDraft.LieDown);   //for sniper
             }

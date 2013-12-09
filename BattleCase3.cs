@@ -28,7 +28,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             } 
             set {
                 damage = value;
-                //if (Hitpoints < 0) damage += Hitpoints;
             } 
         }
         private int healed = 0;
@@ -38,7 +37,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             set
             {
                 healed = value;
-                //if (Hitpoints > 100) healed -= (Hitpoints - 100);
             }
         }
 
@@ -136,6 +134,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             }
             var distancesRange = maxDistance - minDistance;
             var dangerIndex = pointsAmount > 0 ? (minDistance <= 4 ? 10 : 1) + distancesRange : 0;
+            if (self.Location.SamePosition(move) && dangerIndex > 0)
+            {
+                dangerIndex = 33;   
+            }
             Console.WriteLine("Danger for " + move + ": " + (pointsAmount > 0 ? "there are " + pointsAmount + " points attack this one with distances from " + minDistance + " to " + maxDistance + ", index = " + dangerIndex : "no danger"));    //[DEBUG]
             move.DangerIndex = dangerIndex; ;
         }
@@ -276,7 +278,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
             CanComeAndHeal = new bool[] { stepsToSickAllies <= warrior.MaxSteps, stepsToSickAllies <= warrior.MaxSteps + warrior.AbsoluteMaxSteps };
         }
 
-        //following 4 used to decide - can we help our guys or not
         public bool CanAttackFromHere { get; private set; }
         public int StepsToAttack { get; private set; }
         public bool[] CanComeAndAttack { get; private set; }
@@ -403,7 +404,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.AI
 
         public BattleWarrior3State[] Allies { get; set; }
         public BattleWarrior3State[] Enemies { get; set; }
-        public readonly static int DeadDamageBonus = 50;
+        public readonly static int DeadDamageBonus = 150;
         public int AlliesDamage { get { return Allies.Sum(a => a.Damage + (a.Alive ? 0 : DeadDamageBonus)); } }
         public int EnemiesDamage { get { return Enemies.Sum(e => e.Damage + (e.Alive ? 0 : DeadDamageBonus)); } }
 

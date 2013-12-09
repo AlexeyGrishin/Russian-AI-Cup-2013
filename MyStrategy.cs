@@ -20,7 +20,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int NeedHeeling = 80;
         public static int NeedHeelingOutsideBattle = 95;
         public static double HealToDamageCoeff = 0.5;
-        public static double OurEnemyDamageCoeff = 1.2;
+        public static double OurEnemyDamageCoeff = 1.8;
         public static int BackDistance = 6;
         public static int CloseDistance = 3;
         public static int TeamCloseDistance = 2;
@@ -40,6 +40,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
 
         public void Move(Trooper self, World world, Game game, Move move)
+        {
+            Move(self, world, game, move, false);
+        }
+
+        private static bool wasInBattle = false;
+
+        private void Move(Trooper self, World world, Game game, Move move, bool secondAttempt)
         {
             if (AreThereSnipers == null) AreThereSnipers = world.Troopers.Any(t => t.Type == TrooperType.Sniper);
             var start = DateTime.Now;   //[DEBUG]
@@ -63,11 +70,17 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 {
                     BS.DoMove(self, world, move);
                     inBattle = true;
+                    wasInBattle = true;
                 }
                 else
                 {
                     Console.WriteLine("There is no danger...");
                     BS.CancelSteps(self);
+                    if (wasInBattle)
+                    {
+                        world.Troopers.Where(t => t.IsTeammate).ForEach(t => t.Ext().SaveHitpoints());
+                        wasInBattle = false;
+                    }
 
                 }
                 //полечиться, если больше нечем заняться
@@ -78,25 +91,29 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
                 if (!inBattle)
                 {
+                    if (self.Ext().HasBeenDamaged())
+                    {
+                        Console.WriteLine("We are not in battle but we are attacked");
+                        if (BS.ImagineEnemy(self, move, world, game) && !secondAttempt)
+                        {
+                            Move(self, world, game, move, true);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Cannot find where we were attacked from... :(");
+                        }
+                    }
                     //не в бою лучше встать, если есть возможность
                     if (!move.IsMade() && self.Ext().Can(ActionType.RaiseStance) && self.Stance != TrooperStance.Standing)
                     {
                         move.Action = ActionType.RaiseStance;
                     }
-                    self.Ext().SaveHitpoints();
                     //тут мы лечимся между боями
                     if (!move.IsMade() && self.Type != TrooperType.FieldMedic && self.Ext().IsABitSick && world.Troopers.Where(t => t.IsTeammate && t.Type == TrooperType.FieldMedic).Any(t => t.GetDistanceTo(self) <= 1))
                     {
-                        if (!self.Ext().HasBeenDamaged())
-                        {
-                            Console.WriteLine("Allow medic to heal us");
-                            self.Ext().SaveHitpoints(1);
-                            return;
-                        }
-                        else
-                        {
-                            Console.WriteLine("We are not in battle, but I have less hitpoints than before");
-                        }
+                        Console.WriteLine("Allow medic to heal us");
+                        self.Ext().SaveHitpoints(1);
+                        return;
                     }
                     if (!move.IsMade() && self.Type == TrooperType.FieldMedic)
                     {
@@ -129,7 +146,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                         FollowToPoints.Instance.DoMove(self, world, move);
                         Console.WriteLine(String.Format("{0} goes {1}", self.Type, move.Direction));    //[DEBUG]
                     }
-
+                    self.Ext().SaveHitpoints();
                 }
                 //это чтобы не падало
                 LastGuard(move, self.ActionPoints, self.Ext());
